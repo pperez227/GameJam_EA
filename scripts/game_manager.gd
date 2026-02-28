@@ -2,19 +2,17 @@ extends Node
 
 # ── GameManager — central controller ────────────────────────────
 # Connects player/enemy signals, routes damage, updates HUD,
-# triggers effects, and handles game over + restart.
+# triggers effects, handles rounds, knockdown, and match flow.
 #
 # IMPORTANT: This node MUST be the LAST child of Main so that
 # all sibling nodes have their @onready vars resolved before
 # this _ready() runs.
 
-enum GameState { FIGHTING, GAME_OVER }
+enum GameState { ROUND_INTRO, FIGHTING, KNOCKDOWN, ROUND_END, MATCH_OVER }
 
-var state: GameState = GameState.FIGHTING
+var state: GameState = GameState.ROUND_INTRO
 
 # ── References (set in _ready via parent tree) ──────────────────
-# We store these as Node so we can call custom script methods.
-# Godot 4.6 doesn't let us type them as the script class (no class_name).
 var player: Node
 var enemy: Node
 var enemy_ai: Node
@@ -37,6 +35,37 @@ var qte_sequence_cache: Array[String] = []
 var pause_layer: CanvasLayer
 var pause_panel: ColorRect
 var is_paused: bool = false
+
+# ── Round state ─────────────────────────────────────────────────
+const ROUND_TIME: float = 60.0
+const TOTAL_ROUNDS: int = 3
+const WINS_NEEDED: int = 2
+const KNOCKDOWN_TIME: float = 10.0
+const KNOCKDOWN_MASH_NEEDED: int = 15
+const KNOCKDOWN_RECOVERY_HP: float = 12.0
+
+var current_round: int = 1
+var player_wins: int = 0
+var enemy_wins: int = 0
+var round_timer: float = ROUND_TIME
+var transition_timer: float = 0.0
+
+# Knockdown state
+var knockdown_timer: float = 0.0
+var knockdown_target: String = ""  # "player" or "enemy"
+var knockdown_mash_count: int = 0
+var knockdown_last_key: String = ""
+var knockdown_decided: bool = false  # enemy auto-decide flag
+
+# Combo counter
+var hit_combo_count: int = 0
+var hit_combo_timer: float = 0.0
+
+# Victory screen
+var victory_layer: CanvasLayer
+var victory_panel: ColorRect
+var victory_result_label: Label
+var victory_score_label: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -101,8 +130,10 @@ func _ready() -> void:
 	# Connect signals
 	player.player_hit.connect(_on_player_hit)
 	player.player_dead.connect(_on_player_dead)
+	player.player_knocked_down.connect(_on_player_knocked_down)
 	enemy.enemy_hit.connect(_on_enemy_hit)
 	enemy.enemy_dead.connect(_on_enemy_dead)
+	enemy.enemy_knocked_down.connect(_on_enemy_knocked_down)
 	enemy.enemy_super_activated.connect(_on_enemy_super_activated)
 	
 	# QTE Signals
@@ -116,18 +147,188 @@ func _ready() -> void:
 	player.attack_launched.connect(_on_player_attack_launched)
 	enemy.enemy_attack_launched.connect(_on_enemy_attack_launched)
 
-	# Build pause menu
+	# Build UI overlays
 	_build_pause_menu()
+	_build_victory_screen()
 
-func _process(_delta: float) -> void:
+	# Start first round intro
+	_start_round_intro()
+
+# ── Main loop ───────────────────────────────────────────────────
+func _process(delta: float) -> void:
 	if is_paused:
 		return
-	if state == GameState.FIGHTING:
-		_update_hud()
-		_check_power_pulse()
-	elif state == GameState.GAME_OVER:
-		if Input.is_action_just_pressed("restart"):
-			get_tree().reload_current_scene()
+
+	match state:
+		GameState.ROUND_INTRO:
+			transition_timer -= delta
+			if transition_timer <= 0:
+				_start_fighting()
+		GameState.FIGHTING:
+			_update_hud()
+			_check_power_pulse()
+			# Round timer
+			round_timer -= delta
+			hud.update_timer(maxf(round_timer, 0.0))
+			if round_timer <= 0:
+				_end_round_by_time()
+			# Combo timer
+			if hit_combo_timer > 0:
+				hit_combo_timer -= delta
+				if hit_combo_timer <= 0:
+					hit_combo_count = 0
+					hud.update_combo(0)
+		GameState.KNOCKDOWN:
+			_process_knockdown(delta)
+		GameState.ROUND_END:
+			transition_timer -= delta
+			if transition_timer <= 0:
+				_start_next_round()
+		GameState.MATCH_OVER:
+			pass  # Victory screen handles input
+
+func _check_power_pulse() -> void:
+	screen_effects.set_yellow_pulse(player.power >= 1.0)
+
+# ── Round flow ──────────────────────────────────────────────────
+func _start_round_intro() -> void:
+	state = GameState.ROUND_INTRO
+	transition_timer = 2.0
+	player.is_dead = true  # Freeze player during intro
+	hud.update_round(current_round)
+	hud.update_score(player_wins, enemy_wins)
+	hud.show_transition("Round " + str(current_round))
+
+func _start_fighting() -> void:
+	state = GameState.FIGHTING
+	round_timer = ROUND_TIME
+	player.is_dead = false  # Unfreeze
+	enemy.is_dead = false
+	hud.hide_transition()
+	hud.update_timer(round_timer)
+
+func _end_round_by_time() -> void:
+	# Whoever has more HP wins
+	if player.hp > enemy.hp:
+		_award_round("player")
+	elif enemy.hp > player.hp:
+		_award_round("enemy")
+	else:
+		_award_round("draw")
+
+func _award_round(winner: String) -> void:
+	# Screen shake at end of round
+	screen_effects.shake(8.0, 0.5)
+
+	if winner == "player":
+		player_wins += 1
+	elif winner == "enemy":
+		enemy_wins += 1
+	# Draw: no one gets a point
+
+	hud.update_score(player_wins, enemy_wins)
+	hud.hide_knockdown()
+
+	# Check match over
+	if player_wins >= WINS_NEEDED or enemy_wins >= WINS_NEEDED or current_round >= TOTAL_ROUNDS:
+		_show_match_result()
+	else:
+		# Transition to next round
+		state = GameState.ROUND_END
+		transition_timer = 2.5
+		player.is_dead = true  # Freeze during transition
+		enemy.is_dead = true
+		var winner_text = "Jugador gana el round!" if winner == "player" else ("Enemigo gana el round!" if winner == "enemy" else "Empate!")
+		hud.show_transition(winner_text + "\n" + str(player_wins) + " - " + str(enemy_wins))
+
+func _start_next_round() -> void:
+	current_round += 1
+	player.reset_for_round()
+	enemy.reset_for_round()
+	enemy_ai.reset_for_round()
+	# Reset combo
+	hit_combo_count = 0
+	hit_combo_timer = 0.0
+	hud.update_combo(0)
+	hud.hide_transition()
+	_start_round_intro()
+
+# ── Knockdown system ────────────────────────────────────────────
+func _on_player_knocked_down() -> void:
+	if state != GameState.FIGHTING:
+		return
+	state = GameState.KNOCKDOWN
+	knockdown_target = "player"
+	knockdown_timer = KNOCKDOWN_TIME
+	knockdown_mash_count = 0
+	knockdown_last_key = ""
+	player.is_dead = true  # Freeze
+	player.sprite.rotation = deg_to_rad(90)  # Fallen visual
+	enemy.is_dead = true  # Enemy waits
+
+func _on_enemy_knocked_down() -> void:
+	if state != GameState.FIGHTING:
+		return
+	state = GameState.KNOCKDOWN
+	knockdown_target = "enemy"
+	knockdown_timer = KNOCKDOWN_TIME
+	knockdown_decided = false
+	enemy.is_dead = true
+	enemy.sprite.rotation = deg_to_rad(-90)  # Fallen visual
+	player.is_dead = true  # Player waits
+
+func _process_knockdown(delta: float) -> void:
+	knockdown_timer -= delta
+	var count_display: int = ceili(knockdown_timer)
+	
+	if knockdown_target == "player":
+		hud.show_knockdown(count_display, true)
+		# Player mashes A and D to get up
+		if Input.is_action_just_pressed("move_left"):
+			if knockdown_last_key != "A":
+				knockdown_mash_count += 1
+				knockdown_last_key = "A"
+		elif Input.is_action_just_pressed("move_right"):
+			if knockdown_last_key != "D":
+				knockdown_mash_count += 1
+				knockdown_last_key = "D"
+		
+		if knockdown_mash_count >= KNOCKDOWN_MASH_NEEDED:
+			_recover_from_knockdown("player")
+			return
+	else:
+		hud.show_knockdown(count_display, false)
+		# Enemy auto-decides once whether to get up
+		if not knockdown_decided and knockdown_timer < 7.0:
+			knockdown_decided = true
+			var recover_chance: float = 0.30  # Normal
+			var diff = GameSettings.difficulty
+			if diff == 1:  # Difícil
+				recover_chance = 0.50
+			elif diff == 2:  # Extremo
+				recover_chance = 0.80
+			if randf() < recover_chance:
+				_recover_from_knockdown("enemy")
+				return
+
+	# Time's up — loser doesn't get up
+	if knockdown_timer <= 0:
+		hud.hide_knockdown()
+		_award_round("player" if knockdown_target == "enemy" else "enemy")
+
+func _recover_from_knockdown(who: String) -> void:
+	hud.hide_knockdown()
+	if who == "player":
+		player.is_dead = false
+		player.hp = KNOCKDOWN_RECOVERY_HP
+		player.sprite.rotation = 0
+		enemy.is_dead = false
+	else:
+		enemy.is_dead = false
+		enemy.hp = KNOCKDOWN_RECOVERY_HP
+		enemy.sprite.rotation = 0
+		player.is_dead = false
+	state = GameState.FIGHTING
 
 # ── HUD updates ─────────────────────────────────────────────────
 func _update_hud() -> void:
@@ -137,9 +338,6 @@ func _update_hud() -> void:
 	hud.update_enemy_hp(enemy.hp)
 	hud.update_enemy_stamina(enemy.stamina)
 	hud.update_enemy_power(enemy.power)
-
-func _check_power_pulse() -> void:
-	screen_effects.set_yellow_pulse(player.power >= 1.0)
 
 # ── Hit detection (distance-based, checked every physics frame) ─
 func _physics_process(_delta: float) -> void:
@@ -177,6 +375,11 @@ func _check_player_hits_enemy() -> void:
 		# Player gains power on connect
 		player.on_punch_connected()
 
+		# Combo counter
+		hit_combo_count += 1
+		hit_combo_timer = 2.0
+		hud.update_combo(hit_combo_count)
+
 		# Sound effect
 		if player.current_attack_type == "soft":
 			_play_sfx_safe(sfx_punch)
@@ -211,6 +414,11 @@ func _check_enemy_hits_player() -> void:
 		# Apply damage to player
 		player.take_damage(dmg)
 
+		# Reset combo when player takes damage
+		hit_combo_count = 0
+		hit_combo_timer = 0.0
+		hud.update_combo(0)
+
 		# Enemy gains power on connect
 		enemy.on_punch_connected()
 
@@ -237,12 +445,10 @@ func _on_enemy_hit(_damage: float) -> void:
 	pass  # Damage already applied in _check_player_hits_enemy
 
 func _on_player_dead() -> void:
-	state = GameState.GAME_OVER
-	screen_effects.show_game_over(false)
+	pass  # Handled by knockdown system
 
 func _on_enemy_dead() -> void:
-	state = GameState.GAME_OVER
-	screen_effects.show_game_over(true)
+	pass  # Handled by knockdown system
 
 func _on_enemy_super_activated() -> void:
 	enemy_ai.activate_super()
@@ -312,6 +518,102 @@ func _load_sfx(node_name: String, path: String) -> AudioStreamPlayer:
 	add_child(player_node)
 	return player_node
 
+# ── Match result (victory/defeat screen) ────────────────────────
+func _build_victory_screen() -> void:
+	victory_layer = CanvasLayer.new()
+	victory_layer.name = "VictoryLayer"
+	victory_layer.layer = 15
+	victory_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(victory_layer)
+
+	victory_panel = ColorRect.new()
+	victory_panel.name = "VictoryPanel"
+	victory_panel.color = Color(0, 0, 0, 0.75)
+	victory_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	victory_panel.visible = false
+	victory_layer.add_child(victory_panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.offset_left = -200
+	vbox.offset_right = 200
+	vbox.offset_top = -120
+	vbox.offset_bottom = 120
+	vbox.add_theme_constant_override("separation", 15)
+	victory_panel.add_child(vbox)
+
+	# Result label
+	var result_lbl = Label.new()
+	result_lbl.name = "ResultLabel"
+	result_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	result_lbl.add_theme_font_size_override("font_size", 42)
+	vbox.add_child(result_lbl)
+	victory_result_label = result_lbl
+
+	# Score label
+	var score_lbl = Label.new()
+	score_lbl.name = "ScoreLabel"
+	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_lbl.add_theme_font_size_override("font_size", 24)
+	score_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	vbox.add_child(score_lbl)
+	victory_score_label = score_lbl
+
+	# Spacer
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 10)
+	vbox.add_child(spacer)
+
+	# Rematch button
+	var btn_rematch = Button.new()
+	btn_rematch.text = "REVANCHA"
+	btn_rematch.add_theme_font_size_override("font_size", 24)
+	var style_r = StyleBoxFlat.new()
+	style_r.bg_color = Color(0.376, 0.267, 0.123, 1)
+	btn_rematch.add_theme_stylebox_override("normal", style_r)
+	btn_rematch.pressed.connect(_on_rematch_pressed)
+	vbox.add_child(btn_rematch)
+
+	# Menu button
+	var btn_menu = Button.new()
+	btn_menu.text = "MENÚ PRINCIPAL"
+	btn_menu.add_theme_font_size_override("font_size", 24)
+	var style_m = StyleBoxFlat.new()
+	style_m.bg_color = Color(0.376, 0.267, 0.123, 1)
+	btn_menu.add_theme_stylebox_override("normal", style_m)
+	btn_menu.pressed.connect(_on_victory_menu_pressed)
+	vbox.add_child(btn_menu)
+
+func _show_match_result() -> void:
+	state = GameState.MATCH_OVER
+	player.is_dead = true
+	enemy.is_dead = true
+
+	# Screen shake
+	screen_effects.shake(10.0, 0.5)
+
+	var won: bool = player_wins > enemy_wins
+	victory_panel.visible = true
+
+	if won:
+		victory_result_label.text = "¡GANASTE!"
+		victory_result_label.add_theme_color_override("font_color", Color8(80, 240, 80))
+	else:
+		victory_result_label.text = "PERDISTE"
+		victory_result_label.add_theme_color_override("font_color", Color8(240, 60, 60))
+
+	victory_score_label.text = str(player_wins) + " - " + str(enemy_wins)
+
+func _on_rematch_pressed() -> void:
+	victory_panel.visible = false
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+func _on_victory_menu_pressed() -> void:
+	victory_panel.visible = false
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/Menu.tscn")
+
 # ── Pause menu ──────────────────────────────────────────────────
 func _build_pause_menu() -> void:
 	pause_layer = CanvasLayer.new()
@@ -369,7 +671,7 @@ func _build_pause_menu() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		if state == GameState.GAME_OVER:
+		if state == GameState.MATCH_OVER:
 			return
 		if is_paused:
 			_resume_game()

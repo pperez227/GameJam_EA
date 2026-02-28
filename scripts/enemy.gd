@@ -3,6 +3,7 @@ extends CharacterBody2D
 # ── Signals ──────────────────────────────────────────────────────
 signal enemy_hit(damage: float)
 signal enemy_dead()
+signal enemy_knocked_down()
 signal enemy_super_activated()
 signal enemy_attack_launched(is_super: bool)
 
@@ -259,8 +260,7 @@ func take_damage(damage: float) -> void:
 	hit_timer = HIT_FLASH_DURATION
 	enemy_hit.emit(final_damage)
 	if hp <= 0:
-		is_dead = true
-		enemy_dead.emit()
+		enemy_knocked_down.emit()
 
 func apply_stagger(direction: Vector2, strength: float = 30.0) -> void:
 	position += direction.normalized() * strength
@@ -293,3 +293,20 @@ func _fr(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 	for px: int in range(maxi(x, 0), mini(x + w, img.get_width())):
 		for py: int in range(maxi(y, 0), mini(y + h, img.get_height())):
 			img.set_pixel(px, py, c)
+
+# ── Round reset ─────────────────────────────────────────────────
+func reset_for_round() -> void:
+	hp = MAX_HP
+	stamina = 1.0
+	power = 0.0
+	is_dead = false
+	is_attacking = false
+	is_super_attacking = false
+	attack_active_timer = 0.0
+	hit_timer = 0.0
+	is_blocking = false
+	is_block_broken = false
+	block_broken_timer = 0.0
+	punch_collision.disabled = true
+	sprite.rotation = 0
+	sprite.modulate = Color(1, 1, 1)

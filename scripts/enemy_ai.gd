@@ -384,3 +384,16 @@ func on_enemy_damaged() -> void:
 		# Evade laterally
 		circle_direction = 1.0 if randf() < 0.5 else -1.0
 		_enter_state(State.CIRCLE, randf_range(0.3, 0.6))
+
+# ── Round reset ─────────────────────────────────────────────────
+func reset_for_round() -> void:
+	current_state = State.APPROACH
+	phase_timer = 0.5
+	attack_cooldown = 0.0
+	combo_hits_remaining = 0
+	combo_hit_timer = 0.0
+	super_pending = false
+	super_warning_timer = 0.0
+	super_active_timer = 0.0
+	super_hit_timer = 0.0
+	_player_was_attacking = false

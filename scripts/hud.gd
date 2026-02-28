@@ -36,6 +36,15 @@ var qte_mistake_flash: float = 0.0
 var miss_label: Label
 var miss_timer: float = 0.0
 
+# Round/match UI
+var round_label: Label
+var timer_label: Label
+var score_label: Label
+var knockdown_label: Label
+var knockdown_bg: ColorRect
+var combo_label: Label
+var transition_label: Label
+
 func _ready() -> void:
 	layer = 10
 	_build_enemy_hud()
@@ -43,6 +52,7 @@ func _ready() -> void:
 	_build_hint()
 	_build_qte_hud()
 	_build_miss_hud()
+	_build_round_hud()
 
 # ── Enemy HUD (top-left) ────────────────────────────────────────
 func _build_enemy_hud() -> void:
@@ -353,3 +363,119 @@ func _add_border(parent: Control, x: float, y: float, w: float, h: float) -> voi
 	border.size = Vector2(w + BORDER * 2, h + BORDER * 2)
 	border.color = Color8(0, 0, 0)
 	parent.add_child(border)
+
+# ── Round HUD ─────────────────────────────────────────────────
+func _build_round_hud() -> void:
+	# Round label (top center)
+	round_label = Label.new()
+	round_label.text = "Round 1"
+	round_label.position = Vector2(0, 6)
+	round_label.size = Vector2(800, 30)
+	round_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	round_label.add_theme_font_size_override("font_size", 16)
+	round_label.add_theme_color_override("font_color", Color.WHITE)
+	add_child(round_label)
+
+	# Timer (top center, below round)
+	timer_label = Label.new()
+	timer_label.text = "1:00"
+	timer_label.position = Vector2(0, 26)
+	timer_label.size = Vector2(800, 30)
+	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	timer_label.add_theme_font_size_override("font_size", 22)
+	timer_label.add_theme_color_override("font_color", Color.WHITE)
+	add_child(timer_label)
+
+	# Score (top center, below timer)
+	score_label = Label.new()
+	score_label.text = "0 - 0"
+	score_label.position = Vector2(0, 50)
+	score_label.size = Vector2(800, 30)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_label.add_theme_font_size_override("font_size", 14)
+	score_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	add_child(score_label)
+
+	# Knockdown background (dark, centered, hidden)
+	knockdown_bg = ColorRect.new()
+	knockdown_bg.position = Vector2(200, 180)
+	knockdown_bg.size = Vector2(400, 120)
+	knockdown_bg.color = Color(0, 0, 0, 0.6)
+	knockdown_bg.visible = false
+	add_child(knockdown_bg)
+
+	# Knockdown countdown (center screen, hidden)
+	knockdown_label = Label.new()
+	knockdown_label.text = ""
+	knockdown_label.position = Vector2(0, 185)
+	knockdown_label.size = Vector2(800, 110)
+	knockdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	knockdown_label.add_theme_font_size_override("font_size", 36)
+	knockdown_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	knockdown_label.visible = false
+	add_child(knockdown_label)
+
+	# Combo counter (right side, hidden)
+	combo_label = Label.new()
+	combo_label.text = ""
+	combo_label.position = Vector2(600, 350)
+	combo_label.size = Vector2(180, 50)
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.add_theme_font_size_override("font_size", 32)
+	combo_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	combo_label.visible = false
+	add_child(combo_label)
+
+	# Transition label (center screen, hidden)
+	transition_label = Label.new()
+	transition_label.text = ""
+	transition_label.position = Vector2(0, 160)
+	transition_label.size = Vector2(800, 100)
+	transition_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	transition_label.add_theme_font_size_override("font_size", 40)
+	transition_label.add_theme_color_override("font_color", Color.WHITE)
+	transition_label.visible = false
+	add_child(transition_label)
+
+# ── Round HUD updates ─────────────────────────────────────────
+func update_round(round_num: int) -> void:
+	round_label.text = "Round " + str(round_num)
+
+func update_timer(seconds: float) -> void:
+	var mins: int = int(seconds) / 60
+	var secs: int = int(seconds) % 60
+	timer_label.text = str(mins) + ":" + ("%02d" % secs)
+	if seconds <= 10.0:
+		timer_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+	else:
+		timer_label.add_theme_color_override("font_color", Color.WHITE)
+
+func update_score(p_wins: int, e_wins: int) -> void:
+	score_label.text = str(p_wins) + " - " + str(e_wins)
+
+func show_knockdown(count: int, is_player: bool) -> void:
+	knockdown_bg.visible = true
+	knockdown_label.visible = true
+	knockdown_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	if is_player:
+		knockdown_label.text = str(count) + "\n\u00a1Presiona A y D para levantarte!"
+	else:
+		knockdown_label.text = "KNOCKDOWN\n" + str(count)
+
+func hide_knockdown() -> void:
+	knockdown_label.visible = false
+	knockdown_bg.visible = false
+
+func update_combo(count: int) -> void:
+	if count >= 2:
+		combo_label.visible = true
+		combo_label.text = str(count) + "x"
+	else:
+		combo_label.visible = false
+
+func show_transition(text: String) -> void:
+	transition_label.text = text
+	transition_label.visible = true
+
+func hide_transition() -> void:
+	transition_label.visible = false

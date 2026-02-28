@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal player_hit(damage: float)
 signal player_attacked(hit: bool)
 signal player_dead()
+signal player_knocked_down()
 signal attack_launched(attack_type: String)
 
 # QTE Signals
@@ -23,7 +24,7 @@ const BOT_LEFT_X: float = 140.0
 const BOT_RIGHT_X: float = 660.0	
 
 const MAX_HP: float = 100.0
-const STAMINA_REGEN: float = 0.12
+const STAMINA_REGEN: float = 0.21
 const SOFT_ATTACK_STAMINA_COST: float = 0.15
 const HARD_ATTACK_STAMINA_COST: float = 0.30
 const BLOCK_STAMINA_DRAIN: float = 0.25
@@ -358,7 +359,7 @@ func _finish_qte() -> void:
 	is_attacking = true
 	is_special = true
 	current_attack_type = "special_execute"
-	attack_active_timer = ATTACK_DURATION
+	attack_active_timer = 0.4  # Longer window so super connects
 	punch_collision.disabled = false
 
 func _end_attack() -> void:
@@ -419,8 +420,7 @@ func take_damage(damage: float) -> void:
 	hit_timer = HIT_FLASH_DURATION
 	player_hit.emit(final_damage)
 	if hp <= 0:
-		is_dead = true
-		player_dead.emit()
+		player_knocked_down.emit()
 
 func _handle_hit_flash(delta: float) -> void:
 	var base_color = Color(1, 1, 1)
@@ -443,3 +443,25 @@ func _fr(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 	for px: int in range(maxi(x, 0), mini(x + w, img.get_width())):
 		for py: int in range(maxi(y, 0), mini(y + h, img.get_height())):
 			img.set_pixel(px, py, c)
+
+# ── Round reset ─────────────────────────────────────────────────
+func reset_for_round() -> void:
+	hp = MAX_HP
+	stamina = 1.0
+	power = 0.0
+	is_dead = false
+	is_attacking = false
+	is_special = false
+	current_attack_type = ""
+	attack_cooldown_timer = 0.0
+	attack_active_timer = 0.0
+	hit_timer = 0.0
+	is_blocking = false
+	is_block_broken = false
+	block_broken_timer = 0.0
+	combo_count = 0
+	combo_timer = 0.0
+	is_in_qte = false
+	punch_collision.disabled = true
+	sprite.rotation = 0
+	sprite.modulate = Color(1, 1, 1)
