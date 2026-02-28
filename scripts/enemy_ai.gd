@@ -120,7 +120,7 @@ func _state_attack(delta: float) -> void:
 	# Try to attack
 	if attack_cooldown <= 0 and enemy.stamina >= enemy.NORMAL_ATTACK_STAMINA_COST:
 		var dist: float = enemy.position.distance_to(player.position)
-		if dist < 200.0:
+		if dist < 120.0:
 			enemy.start_attack(false)
 			attack_cooldown = randf_range(ATTACK_COOLDOWN_MIN, ATTACK_COOLDOWN_MAX)
 			# After attack: 60% chain attack/dash, 40% circle

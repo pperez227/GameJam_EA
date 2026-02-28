@@ -15,10 +15,10 @@ signal qte_missed()
 
 # ── Constants ────────────────────────────────────────────────────
 const SPEED: float = 200.0
-const MIN_X: float = 70.0
-const MAX_X: float = 730.0
-const MIN_Y: float = 290.0
-const MAX_Y: float = 430.0
+const MIN_X: float = 100.0
+const MAX_X: float = 700.0
+const MIN_Y: float = 200.0
+const MAX_Y: float = 450.0
 
 const MAX_HP: float = 100.0
 const STAMINA_REGEN: float = 0.12

@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1772288284
+::res://::1772291068
 A.wav::AudioStreamWAV::8158377911016534141::1772285342::1772288271::1::::<><><>0<>0<>22afe14ad9eb447b41781f06bcb2ae3f<>res://.godot/imported/A.wav-20e3e9ef8afb283df8c27022535cc983.sample::
 D.wav::AudioStreamWAV::8815877806209465070::1772285405::1772288271::1::::<><><>0<>0<>21afa8e6f61fd4b18d2b2db8f39a15f4<>res://.godot/imported/D.wav-4f5cb27f281694b0f77cd75414b695d9.sample::
 deadly strike.mp3::AudioStreamMP3::6024180360245289118::1772274668::1772278037::1::::<><><>0<>0<>a9832b1830bf611c01eb2cafbdd5eddb<>res://.godot/imported/deadly strike.mp3-0c5043d20309816d657c0dfeae523f42.mp3str::
@@ -9,6 +9,7 @@ H.wav::AudioStreamWAV::9105311998718447706::1772285550::1772288271::1::::<><><>0
 J.wav::AudioStreamWAV::3448807682498662667::1772285568::1772288271::1::::<><><>0<>0<>c3807078c8da5e3b731a1bddeb4b951f<>res://.godot/imported/J.wav-2004f007a7803218672677e3b344b4b8.sample::
 K.wav::AudioStreamWAV::8390286217858218752::1772285585::1772288271::1::::<><><>0<>0<>c7484d8a003722c2350cfd9bb39913db<>res://.godot/imported/K.wav-7d93725c637b313f57f76b64940f75ec.sample::
 punch.mp3::AudioStreamMP3::2026683446456954686::1772274496::1772278037::1::::<><><>0<>0<>d34ddcd0a03dbc59133e7b24fc5f4443<>res://.godot/imported/punch.mp3-1144533abe62ba7217d63550815cd7c8.mp3str::
+Ring.png::CompressedTexture2D::6840274147105927990::1772291049::1772291122::1::::<><><>0<>0<>316f164a77dae822ba988b328691c125<>res://.godot/imported/Ring.png-a898ac7ee4cd7870a72d17e452c5459b.ctex::
 S.wav::AudioStreamWAV::1475785086933899458::1772285375::1772288271::1::::<><><>0<>0<>54a5cebe13afe6e64535cbd120875cad<>res://.godot/imported/S.wav-283754e92a5797e9a5f26005a581429b.sample::
 whoosh_fuerte.mp3::AudioStreamMP3::339212623566622198::1772281489::1772286966::1::::<><><>0<>0<>b80c00b60b08c17b15301aff5f825f71<>res://.godot/imported/whoosh_fuerte.mp3-78779b435eda1a46e7338592899f1e75.mp3str::
 whoosh_suave.mp3::AudioStreamMP3::7045398195251129948::1772281509::1772286966::1::::<><><>0<>0<>dbf6dca67b2bb90a85ca22746645bb01<>res://.godot/imported/whoosh_suave.mp3-a4d2ab0835a9f29a6f3db9bec5e62da7.mp3str::
@@ -27,7 +28,7 @@ enemy_ai.gd::GDScript::6210956263608434300::1772282238::0::1::::<>Node<><>0<>0<>
 game_manager.gd::GDScript::5950466217698019835::1772288200::0::1::::<>Node<><>0<>0<><>::
 hud.gd::GDScript::2363245444191375924::1772274605::0::1::::<>CanvasLayer<><>0<>0<><>::
 particle_manager.gd::GDScript::230823867657408328::1772274605::0::1::::<>Node2D<><>0<>0<><>::
-player.gd::GDScript::3774160033093512966::1772286237::0::1::::<>CharacterBody2D<><>0<>0<><>::
+player.gd::GDScript::3774160033093512966::1772288665::0::1::::<>CharacterBody2D<><>0<>0<><>::
 ring.gd::GDScript::8435806162787739812::1772274605::0::1::::<>Node2D<><>0<>0<><>::
 screen_effects.gd::GDScript::4569254432318922606::1772274605::0::1::::<>CanvasLayer<><>0<>0<><>::
 ::res://sprites/::1772276789

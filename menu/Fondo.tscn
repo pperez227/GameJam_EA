@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://bo4woa2twrx7"]
+
+[ext_resource type="Texture2D" uid="uid://xidrcrvnmeqv" path="res://Fondo/FondoSinMarca.png" id="1_fdthr"]
+
+[sub_resource type="Theme" id="Theme_fdthr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nw7bw"]
+bg_color = Color(0.37596676, 0.2677317, 0.123049416, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gbpp6"]
+bg_color = Color(0.3764706, 0.26666668, 0.12156863, 1)
+
+[node name="Node" type="Node" unique_id=931335322]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=2110938557]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+color = Color(0.47397572, 0.47397572, 0.47397572, 1)
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1727993136]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -108.0
+offset_top = -18.0
+offset_right = 108.0
+offset_bottom = 19.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_fdthr")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=328002178]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -201.0
+offset_top = -88.0
+offset_right = 201.0
+offset_bottom = 288.5
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_fdthr")
+theme_override_constants/separation = 150
+
+[node name="Button" type="Button" parent="VBoxContainer" unique_id=1837244829]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_nw7bw")
+text = "JUGAR"
+
+[node name="Button3" type="Button" parent="VBoxContainer" unique_id=908905308]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_gbpp6")
+text = "SALIR"

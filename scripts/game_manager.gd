@@ -149,7 +149,7 @@ func _check_player_hits_enemy() -> void:
 
 	# Distance check
 	var dist: float = player_punch_pos.distance_to(enemy_body_pos)
-	if dist < 85.0:
+	if dist < 55.0:
 		if player.current_attack_type == "special_startup":
 			player.start_qte()
 			return
@@ -193,7 +193,7 @@ func _check_enemy_hits_player() -> void:
 	var player_body_pos: Vector2 = player.global_position
 
 	var dist: float = enemy_punch_pos.distance_to(player_body_pos)
-	if dist < 90.0:
+	if dist < 60.0:
 		var dmg: float = enemy.get_current_damage()
 		var particle_type: String = "super" if enemy.is_super_attacking else "normal"
 
