@@ -83,10 +83,13 @@ func _ready() -> void:
 			sfx_whoosh_super.stream.get_length()
 		)
 
-	# Load combo note audio files (A-K, no L)
+	# Load combo note audio files (A-K, no L) using native load() in uppercase
 	var note_keys = ["A", "S", "D", "F", "G", "H", "J", "K"]
 	for key in note_keys:
-		var note_player = _load_sfx("SfxNote" + key, "res://" + key + ".mp3")
+		var note_player = AudioStreamPlayer.new()
+		note_player.name = "SfxNote" + key
+		note_player.stream = load("res://" + key + ".mp3")
+		add_child(note_player)
 		combo_note_sfx[key] = note_player
 
 	# Connect signals
