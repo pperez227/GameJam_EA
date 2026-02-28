@@ -17,9 +17,9 @@ const BLOCK_STAMINA_DRAIN: float = 0.25
 const NORMAL_ATTACK_STAMINA_COST: float = 0.15
 const SUPER_ATTACK_STAMINA_COST: float = 0.30
 
-const MIN_X: float = 100.0
-const MAX_X: float = 700.0
-const MIN_Y: float = 160.0
+const MIN_X: float = 140.0
+const MAX_X: float = 660.0
+const MIN_Y: float = 190.0
 const MAX_Y: float = 420.0
 
 # ── State ────────────────────────────────────────────────────────
@@ -175,8 +175,7 @@ func _process(delta: float) -> void:
 	_handle_stamina(delta)
 	_handle_block_broken_timer(delta)
 	_handle_hit_flash(delta)
-	position.x = clampf(position.x, MIN_X, MAX_X)
-	position.y = clampf(position.y, MIN_Y, MAX_Y)
+	_clamp_to_ring()
 
 func _handle_stamina(delta: float) -> void:
 	if not is_blocking and not is_block_broken:
@@ -265,6 +264,11 @@ func take_damage(damage: float) -> void:
 
 func apply_stagger(direction: Vector2, strength: float = 30.0) -> void:
 	position += direction.normalized() * strength
+	_clamp_to_ring()
+
+func _clamp_to_ring() -> void:
+	position.x = clampf(position.x, MIN_X, MAX_X)
+	position.y = clampf(position.y, MIN_Y, MAX_Y)
 
 func _handle_hit_flash(delta: float) -> void:
 	var base_color = Color(1, 1, 1)

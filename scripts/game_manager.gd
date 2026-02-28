@@ -53,7 +53,7 @@ func _ready() -> void:
 	sfx_punch = AudioStreamPlayer.new()
 	sfx_punch.name = "SfxPunch"
 	var punch_stream = AudioStreamMP3.new()
-	var punch_file = FileAccess.open("res://punch.mp3", FileAccess.READ)
+	var punch_file = FileAccess.open("res://assets/audio/punch.mp3", FileAccess.READ)
 	if punch_file:
 		punch_stream.data = punch_file.get_buffer(punch_file.get_length())
 		punch_file.close()
@@ -63,7 +63,7 @@ func _ready() -> void:
 	sfx_deadly = AudioStreamPlayer.new()
 	sfx_deadly.name = "SfxDeadly"
 	var deadly_stream = AudioStreamMP3.new()
-	var deadly_file = FileAccess.open("res://deadly strike.mp3", FileAccess.READ)
+	var deadly_file = FileAccess.open("res://assets/audio/deadly strike.mp3", FileAccess.READ)
 	if deadly_file:
 		deadly_stream.data = deadly_file.get_buffer(deadly_file.get_length())
 		deadly_file.close()
@@ -71,9 +71,9 @@ func _ready() -> void:
 	add_child(sfx_deadly)
 
 	# Load whoosh sound effects
-	sfx_whoosh_soft = _load_sfx("SfxWhooshSoft", "res://whoosh_suave.mp3")
-	sfx_whoosh_hard = _load_sfx("SfxWhooshHard", "res://whoosh_fuerte.mp3")
-	sfx_whoosh_super = _load_sfx("SfxWhooshSuper", "res://whoosh_super.mp3")
+	sfx_whoosh_soft = _load_sfx("SfxWhooshSoft", "res://assets/audio/whoosh_suave.mp3")
+	sfx_whoosh_hard = _load_sfx("SfxWhooshHard", "res://assets/audio/whoosh_fuerte.mp3")
+	sfx_whoosh_super = _load_sfx("SfxWhooshSuper", "res://assets/audio/whoosh_super.mp3")
 
 	# Pass exact sound lengths to player for dynamic cooldowns
 	if player.has_method("set_attack_durations"):
@@ -88,7 +88,7 @@ func _ready() -> void:
 	for key in note_keys:
 		var note_player = AudioStreamPlayer.new()
 		note_player.name = "SfxNote" + key
-		note_player.stream = load("res://" + key + ".wav")
+		note_player.stream = load("res://assets/audio/" + key + ".wav")
 		add_child(note_player)
 		combo_note_sfx[key] = note_player
 
