@@ -15,10 +15,12 @@ signal qte_missed()
 
 # ── Constants ────────────────────────────────────────────────────
 const SPEED: float = 200.0
-const MIN_X: float = 100.0
-const MAX_X: float = 700.0
-const MIN_Y: float = 200.0
-const MAX_Y: float = 450.0
+const MIN_Y: float = 190.0
+const MAX_Y: float = 420.0
+const TOP_LEFT_X: float = 165.0
+const TOP_RIGHT_X: float = 635.0
+const BOT_LEFT_X: float = 50.0
+const BOT_RIGHT_X: float = 750.0
 
 const MAX_HP: float = 100.0
 const STAMINA_REGEN: float = 0.12
@@ -262,8 +264,11 @@ func _handle_movement(delta: float) -> void:
 		current_speed *= 0.6
 		
 	position += dir * current_speed * delta
-	position.x = clampf(position.x, MIN_X, MAX_X)
 	position.y = clampf(position.y, MIN_Y, MAX_Y)
+	var t: float = (position.y - MIN_Y) / (MAX_Y - MIN_Y)
+	var dyn_min_x: float = lerpf(TOP_LEFT_X, BOT_LEFT_X, t)
+	var dyn_max_x: float = lerpf(TOP_RIGHT_X, BOT_RIGHT_X, t)
+	position.x = clampf(position.x, dyn_min_x, dyn_max_x)
 
 func _handle_stamina(delta: float) -> void:
 	if not is_blocking and not is_block_broken:
