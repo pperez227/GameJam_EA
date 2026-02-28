@@ -29,6 +29,10 @@ var sfx_whoosh_soft: AudioStreamPlayer
 var sfx_whoosh_hard: AudioStreamPlayer
 var sfx_whoosh_super: AudioStreamPlayer
 
+# Combo note audio (one AudioStreamPlayer per letter)
+var combo_note_sfx: Dictionary = {}
+var qte_sequence_cache: Array[String] = []
+
 func _ready() -> void:
 	# Get references from sibling nodes (all already initialized)
 	player = get_parent().get_node("Player")
@@ -78,6 +82,12 @@ func _ready() -> void:
 			sfx_whoosh_hard.stream.get_length(),
 			sfx_whoosh_super.stream.get_length()
 		)
+
+	# Load combo note audio files (A-K, no L)
+	var note_keys = ["A", "S", "D", "F", "G", "H", "J", "K"]
+	for key in note_keys:
+		var note_player = _load_sfx("SfxNote" + key, "res://" + key + ".mp3")
+		combo_note_sfx[key] = note_player
 
 	# Connect signals
 	player.player_hit.connect(_on_player_hit)
@@ -225,10 +235,23 @@ func _on_enemy_super_activated() -> void:
 
 func _on_qte_started(sequence: Array[String], time_limit: float) -> void:
 	enemy_ai.set_qte_slowdown(true)
+	qte_sequence_cache = sequence.duplicate()
 	hud.start_qte(sequence, time_limit)
 
 func _on_qte_progress(current_index: int, sequence_size: int) -> void:
 	hud.update_qte_progress(current_index)
+	# Play the note for the key that was just completed
+	if current_index > 0 and current_index <= qte_sequence_cache.size():
+		var completed_key = qte_sequence_cache[current_index - 1]
+		if combo_note_sfx.has(completed_key):
+			var note: AudioStreamPlayer = combo_note_sfx[completed_key]
+			# Last note plays louder for resolution feel
+			if current_index == sequence_size:
+				note.volume_db = 6.0
+			else:
+				note.volume_db = 0.0
+			note.stop()
+			note.play()
 
 func _on_qte_mistake(multiplier: float) -> void:
 	hud.show_qte_mistake()

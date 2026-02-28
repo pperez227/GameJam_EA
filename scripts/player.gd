@@ -76,8 +76,8 @@ const QTE_ACTIONS = {
 	"qte_f": "F", "qte_g": "G", "qte_h": "H",
 	"soft_attack": "J", "hard_attack": "K", "special": "L"
 }
-var qte_keys = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
-var qte_action_names = ["move_left", "move_down", "move_right", "qte_f", "qte_g", "qte_h", "soft_attack", "hard_attack", "special"]
+var qte_keys = ["A", "S", "D", "F", "G", "H", "J", "K"]
+var qte_action_names = ["move_left", "move_down", "move_right", "qte_f", "qte_g", "qte_h", "soft_attack", "hard_attack"]
 
 # ── Node references ─────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite
@@ -339,8 +339,8 @@ func start_qte() -> void:
 	qte_sequence.clear()
 	punch_collision.disabled = true
 	
-	# Generate 5 to 8 random inputs
-	var seq_length = randi_range(5, 8)
+	# Generate 4 to 6 random inputs
+	var seq_length = randi_range(4, 6)
 	for i in range(seq_length):
 		qte_sequence.append(qte_keys[randi() % qte_keys.size()])
 		
