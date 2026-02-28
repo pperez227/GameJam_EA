@@ -19,8 +19,12 @@ const CLOSE_RANGE: float = 70.0
 const FAR_RANGE: float = 160.0
 
 const COMBO_COOLDOWN: float = 0.18        # Between hits in a combo
-const BETWEEN_COMBO_COOLDOWN: float = 0.5  # After a combo ends
-const MAX_COMBO_HITS: int = 3
+
+# Difficulty-tuned parameters (set in _ready)
+var between_combo_cooldown: float = 0.5
+var max_combo_hits: int = 3
+var diff_block_chance: float = 0.4
+var base_aggression: float = 0.55
 
 const SUPER_WARNING_TIME: float = 0.3
 const SUPER_DURATION: float = 1.2
@@ -55,6 +59,23 @@ var player: CharacterBody2D
 
 func _ready() -> void:
 	enemy = get_parent() as CharacterBody2D
+	# Apply difficulty settings
+	var diff: int = GameSettings.difficulty
+	if diff == 0:  # Fácil
+		between_combo_cooldown = 1.0
+		max_combo_hits = 1
+		diff_block_chance = 0.0
+		base_aggression = 0.25
+	elif diff == 2:  # Difícil
+		between_combo_cooldown = 0.25
+		max_combo_hits = 4
+		diff_block_chance = 0.7
+		base_aggression = 0.85
+	else:  # Normal (default)
+		between_combo_cooldown = 0.5
+		max_combo_hits = 3
+		diff_block_chance = 0.4
+		base_aggression = 0.55
 
 func set_player_reference(p: CharacterBody2D) -> void:
 	player = p
@@ -136,7 +157,7 @@ func _should_react_with_block() -> bool:
 	if dist > 120.0:
 		return false
 	# Higher chance when HP is high (cautious), lower when desperate
-	var block_chance: float = 0.5 if (enemy.hp / enemy.MAX_HP) > 0.4 else 0.2
+	var block_chance: float = diff_block_chance if (enemy.hp / enemy.MAX_HP) > 0.4 else diff_block_chance * 0.4
 	return randf() < block_chance
 
 # ── States ───────────────────────────────────────────────────────
@@ -206,7 +227,7 @@ func _state_attack(delta: float) -> void:
 
 	# Combo finished — decide next move
 	if combo_hits_remaining <= 0 and combo_hit_timer <= 0:
-		attack_cooldown = BETWEEN_COMBO_COOLDOWN
+		attack_cooldown = between_combo_cooldown
 		_after_combo()
 
 func _state_block(delta: float) -> void:
@@ -222,7 +243,7 @@ func _state_block(delta: float) -> void:
 
 # ── Combo system ────────────────────────────────────────────────
 func _start_combo() -> void:
-	combo_hits_remaining = randi_range(2, MAX_COMBO_HITS)
+	combo_hits_remaining = randi_range(1, max_combo_hits)
 	combo_hit_timer = 0.0  # First hit is immediate
 	_enter_state(State.ATTACK, 2.0)  # Long timer — combo controls exit
 
@@ -293,13 +314,13 @@ func _choose_next_state() -> void:
 	if "hp" in player and "MAX_HP" in player:
 		player_hp_ratio = player.hp / player.MAX_HP
 
-	var aggression: float = 0.55
+	var aggression: float = base_aggression
 	if enemy_hp_ratio < 0.3:
-		aggression = 0.85  # Desperate — all in
+		aggression = minf(base_aggression + 0.30, 0.95)  # Desperate — go all in
 	elif player_hp_ratio < 0.3:
-		aggression = 0.80  # Smell blood
+		aggression = minf(base_aggression + 0.25, 0.90)  # Smell blood
 	elif enemy_hp_ratio > 0.7:
-		aggression = 0.50  # Comfortable
+		aggression = base_aggression - 0.05  # Comfortable
 
 	# Far away → close the distance
 	if dist > FAR_RANGE:

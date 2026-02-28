@@ -114,7 +114,7 @@ func _build_player_hud() -> void:
 	title_lbl.text = "JUGADOR"
 	title_lbl.position = Vector2(base_x, 6)
 	title_lbl.add_theme_font_size_override("font_size", 14)
-	title_lbl.add_theme_color_override("font_color", Color8(80, 200, 80))
+	title_lbl.add_theme_color_override("font_color", Color8(26, 92, 26))
 	container.add_child(title_lbl)
 
 	# HP bar

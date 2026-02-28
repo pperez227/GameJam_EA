@@ -9,6 +9,9 @@ bg_color = Color(0.376, 0.267, 0.123, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_salir"]
 bg_color = Color(0.376, 0.267, 0.122, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_diff"]
+bg_color = Color(0.376, 0.267, 0.123, 1)
+
 [node name="Menu" type="Node"]
 script = ExtResource("1")
 
@@ -44,13 +47,25 @@ offset_right = 201.0
 offset_bottom = 288.5
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 150
+theme_override_constants/separation = 30
 
 [node name="Button" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 theme_override_styles/normal = SubResource("StyleBoxFlat_jugar")
 text = "JUGAR"
+
+[node name="DifficultyOption" type="OptionButton" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleBoxFlat_diff")
+item_count = 3
+selected = 1
+popup/item_0/text = "Fácil"
+popup/item_1/text = "Normal"
+popup/item_1/id = 1
+popup/item_2/text = "Difícil"
+popup/item_2/id = 2
 
 [node name="Button3" type="Button" parent="VBoxContainer"]
 layout_mode = 2

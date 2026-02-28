@@ -17,12 +17,12 @@ const BLOCK_STAMINA_DRAIN: float = 0.25
 const NORMAL_ATTACK_STAMINA_COST: float = 0.15
 const SUPER_ATTACK_STAMINA_COST: float = 0.30
 
-const MIN_Y: float = 205.0
+const MIN_Y: float = 230.0
 const MAX_Y: float = 420.0
-const TOP_LEFT_X: float = 195.0
-const TOP_RIGHT_X: float = 605.0
-const BOT_LEFT_X: float = 30.0
-const BOT_RIGHT_X: float = 770.0
+const TOP_LEFT_X: float = 230.0
+const TOP_RIGHT_X: float = 570.0
+const BOT_LEFT_X: float = 140.0
+const BOT_RIGHT_X: float = 660.0
 
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP
@@ -198,9 +198,7 @@ func _handle_attack_timer(delta: float) -> void:
 			_end_attack()
 
 func start_attack(is_super: bool = false) -> void:
-	if is_super:
-		stamina -= SUPER_ATTACK_STAMINA_COST
-	else:
+	if not is_super:
 		stamina -= NORMAL_ATTACK_STAMINA_COST
 	stamina = maxf(stamina, 0.0)
 	is_attacking = true

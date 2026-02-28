@@ -18,6 +18,10 @@ config/name="PunchOut Fighter"
 run/main_scene="res://scenes/Menu.tscn"
 config/features=PackedStringArray("4.6")
 
+[autoload]
+
+GameSettings="*res://scripts/game_settings.gd"
+
 [display]
 
 window/size/viewport_width=800
