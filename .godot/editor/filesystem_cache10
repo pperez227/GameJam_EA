@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1772314980
+::res://::1772315258
 ::res://assets/::1772314681
 ::res://assets/audio/::1772292980
 A.wav::AudioStreamWAV::9148660431435409369::1772285342::1772292980::1::::<><><>0<>0<>970e9d9e9e043a30e5960f331c6ee448<>res://.godot/imported/A.wav-d3aaa7670c443c9e6294582208c21578.sample::
@@ -26,7 +26,8 @@ rana_quieto.jpg::CompressedTexture2D::3908152361159672708::1772309898::177230997
 rana_quieto.png::CompressedTexture2D::9211119192133206935::1772310820::1772310876::1::::<><><>0<>0<>6658b801b59742d8f717158afc1d593b<>res://.godot/imported/rana_quieto.png-172e7617bab89786ce645d6030e44813.ctex::
 Ring.png::CompressedTexture2D::9143824559693418740::1772291049::1772292980::1::::<><><>0<>0<>a471fd6c53e5f8a154d3ed632a959b87<>res://.godot/imported/Ring.png-43795af99bcc54b69b3ef51ba2d7a903.ctex::
 ring_new.jpg::CompressedTexture2D::5497942576623244350::1772309424::1772309610::1::::<><><>0<>0<>9e002deeb81f9ed6571526304813af52<>res://.godot/imported/ring_new.jpg-05b0eebaff47d0801d1338265ab413d8.ctex::
-::res://assets/music/::1772314683
+::res://assets/music/::1772315250
+musica.ogg::AudioStreamOggVorbis::9044132906805754054::1772315164::1772315250::1::::<><><>0<>0<>2063b501bcb12f300bee8506eb2c911b<>res://.godot/imported/musica.ogg-01f804f1d61b785c624a7f1454643116.oggvorbisstr::
 ::res://assets/walk_frames/::1772310381
 ::res://assets/walk_frames/enemy/::1772310562
 frame_0.png::CompressedTexture2D::8858491508117404641::1772310820::1772310562::1::::<><><>0<>0<>b9f1a566a46ac9345fa5af34d4efcc1d<>res://.godot/imported/frame_0.png-a378dfd98a0b35dda9a8f3f0d39f2c7d.ctex::
@@ -58,7 +59,7 @@ game_manager.gd::GDScript::5950466217698019835::1772309064::0::1::::<>Node<><>0<
 game_settings.gd::GDScript::796506906049846299::1772305030::0::1::::<>Node<><>0<>0<><>::
 hud.gd::GDScript::2363245444191375924::1772308621::0::1::::<>CanvasLayer<><>0<>0<><>::
 menu.gd::GDScript::7928904187833197492::1772296662::0::1::::<>Node<><>0<>0<><>::
-music_manager.gd::GDScript::1405189076818640049::1772314887::0::1::::<>Node<><>0<>0<><>::
+music_manager.gd::GDScript::1405189076818640049::1772315174::0::1::::<>Node<><>0<>0<><>::
 particle_manager.gd::GDScript::230823867657408328::1772274605::0::1::::<>Node2D<><>0<>0<><>::
 player.gd::GDScript::3774160033093512966::1772311003::0::1::::<>CharacterBody2D<><>0<>0<><>::
 ring.gd::GDScript::8435806162787739812::1772310413::0::1::::<>Node2D<><>0<>0<><>::
