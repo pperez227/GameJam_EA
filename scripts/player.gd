@@ -37,6 +37,9 @@ const SPECIAL_COOLDOWN: float = 0.3
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
 const COMBO_TIMEOUT: float = 1.5
+const DASH_SPEED: float = 600.0
+const DASH_DURATION: float = 0.12
+const DASH_COOLDOWN: float = 0.8
 
 const QTE_TIME_LIMIT: float = 3.5
 const QTE_PENALTY_PER_MISTAKE: float = 0.15
@@ -60,6 +63,13 @@ var is_special: bool = false
 var current_attack_type: String = ""
 var hit_timer: float = 0.0
 var is_dead: bool = false
+var attack_direction: Vector2 = Vector2(0, -1)  # Direction of last attack
+
+# Dash state
+var is_dashing: bool = false
+var dash_timer: float = 0.0
+var dash_cooldown_timer: float = 0.0
+var dash_direction: Vector2 = Vector2.ZERO
 
 var is_blocking: bool = false
 var is_block_broken: bool = false
@@ -199,6 +209,7 @@ func _build_shadow() -> void:
 func _process(delta: float) -> void:
 	if is_dead:
 		return
+	_handle_dash_timers(delta)
 	_handle_movement(delta)
 	_handle_stamina(delta)
 	_handle_attack_timers(delta)
@@ -254,11 +265,21 @@ func _handle_combo_timer(delta: float) -> void:
 func _handle_movement(delta: float) -> void:
 	if is_blocking or is_block_broken or is_in_qte:
 		return
+	# During dash, move in dash_direction only
+	if is_dashing:
+		position += dash_direction * DASH_SPEED * delta
+		position.y = clampf(position.y, MIN_Y, MAX_Y)
+		var t: float = (position.y - MIN_Y) / (MAX_Y - MIN_Y)
+		var dyn_min_x: float = lerpf(TOP_LEFT_X, BOT_LEFT_X, t)
+		var dyn_max_x: float = lerpf(TOP_RIGHT_X, BOT_RIGHT_X, t)
+		position.x = clampf(position.x, dyn_min_x, dyn_max_x)
+		return
 	var dir: Vector2 = Vector2.ZERO
 	dir.x = Input.get_axis("move_left", "move_right")
 	dir.y = Input.get_axis("move_up", "move_down")
 	if dir.length() > 0:
 		dir = dir.normalized()
+		attack_direction = dir  # Track for directional hitbox
 		
 	var current_speed = SPEED
 	if stamina <= 0.1:
@@ -305,6 +326,20 @@ func _handle_input() -> void:
 		return
 	if Input.is_action_just_pressed("hard_attack") and stamina >= HARD_ATTACK_STAMINA_COST:
 		_start_attack("hard", HARD_ATTACK_STAMINA_COST)
+		return
+	# Dash with Shift
+	if Input.is_action_just_pressed("dash") and dash_cooldown_timer <= 0 and not is_dashing:
+		var dash_dir: Vector2 = Vector2.ZERO
+		dash_dir.x = Input.get_axis("move_left", "move_right")
+		dash_dir.y = Input.get_axis("move_up", "move_down")
+		if dash_dir.length() < 0.1:
+			dash_dir = Vector2(-1, 0)  # Default: dash left
+		else:
+			dash_dir = dash_dir.normalized()
+		is_dashing = true
+		dash_direction = dash_dir
+		dash_timer = DASH_DURATION
+		dash_cooldown_timer = DASH_COOLDOWN
 		return
 
 func set_attack_durations(soft: float, hard: float, super_atk: float) -> void:
@@ -444,6 +479,15 @@ func _fr(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 		for py: int in range(maxi(y, 0), mini(y + h, img.get_height())):
 			img.set_pixel(px, py, c)
 
+# ── Dash timers ─────────────────────────────────────────────────
+func _handle_dash_timers(delta: float) -> void:
+	if dash_cooldown_timer > 0:
+		dash_cooldown_timer -= delta
+	if is_dashing:
+		dash_timer -= delta
+		if dash_timer <= 0:
+			is_dashing = false
+
 # ── Round reset ─────────────────────────────────────────────────
 func reset_for_round() -> void:
 	hp = MAX_HP
@@ -465,3 +509,8 @@ func reset_for_round() -> void:
 	punch_collision.disabled = true
 	sprite.rotation = 0
 	sprite.modulate = Color(1, 1, 1)
+	is_dashing = false
+	dash_timer = 0.0
+	dash_cooldown_timer = 0.0
+	attack_direction = Vector2(0, -1)
+	position = Vector2(400, 400)

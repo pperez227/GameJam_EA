@@ -60,7 +60,11 @@ var knockdown_decided: bool = false  # enemy auto-decide flag
 # Combo counter
 var hit_combo_count: int = 0
 var hit_combo_timer: float = 0.0
-var overlap_timer: float = 0.0
+
+# 3-KO win system (cumulative across all rounds)
+var player_knockdowns_total: int = 0
+var enemy_knockdowns_total: int = 0
+const KO_WIN_COUNT: int = 3
 
 # Victory screen
 var victory_layer: CanvasLayer
@@ -173,6 +177,12 @@ func _process(delta: float) -> void:
 			hud.update_timer(maxf(round_timer, 0.0))
 			if round_timer <= 0:
 				_end_round_by_time()
+			# Super aura pulse
+			if enemy.power >= 1.0:
+				var pulse = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
+				enemy.sprite.modulate = Color(0.7 + 0.3 * pulse, 0.3, 0.8 + 0.2 * pulse)
+			else:
+				enemy.sprite.modulate = Color(1, 1, 1)
 			# Combo timer
 			if hit_combo_timer > 0:
 				hit_combo_timer -= delta
@@ -259,6 +269,10 @@ func _start_next_round() -> void:
 func _on_player_knocked_down() -> void:
 	if state != GameState.FIGHTING:
 		return
+	player_knockdowns_total += 1
+	if player_knockdowns_total >= KO_WIN_COUNT:
+		_show_match_result()
+		return
 	state = GameState.KNOCKDOWN
 	knockdown_target = "player"
 	knockdown_timer = KNOCKDOWN_TIME
@@ -270,6 +284,10 @@ func _on_player_knocked_down() -> void:
 
 func _on_enemy_knocked_down() -> void:
 	if state != GameState.FIGHTING:
+		return
+	enemy_knockdowns_total += 1
+	if enemy_knockdowns_total >= KO_WIN_COUNT:
+		_show_match_result()
 		return
 	state = GameState.KNOCKDOWN
 	knockdown_target = "enemy"
@@ -331,6 +349,7 @@ func _recover_from_knockdown(who: String) -> void:
 		else:
 			enemy.position.x = 180
 		enemy._clamp_to_ring()
+		enemy_ai.set_cooldown(3.0)  # AI waits 3s
 	else:
 		enemy.is_dead = false
 		enemy.hp = KNOCKDOWN_RECOVERY_HP
@@ -342,6 +361,7 @@ func _recover_from_knockdown(who: String) -> void:
 		else:
 			player.position.x = 180
 		player._clamp_to_ring()
+		enemy_ai.set_cooldown(3.0)  # AI waits 3s
 	state = GameState.FIGHTING
 
 # ── HUD updates ─────────────────────────────────────────────────
@@ -372,8 +392,9 @@ func _check_player_hits_enemy() -> void:
 	if player.punch_collision.disabled:
 		return
 
-	# Compute positions
-	var player_punch_pos: Vector2 = player.global_position + Vector2(0, -45)
+	# Compute positions — directional hitbox based on player input
+	var punch_offset: Vector2 = player.attack_direction * 45.0
+	var player_punch_pos: Vector2 = player.global_position + punch_offset
 	var enemy_body_pos: Vector2 = enemy.global_position
 
 	# Distance check

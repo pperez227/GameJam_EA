@@ -310,3 +310,4 @@ func reset_for_round() -> void:
 	punch_collision.disabled = true
 	sprite.rotation = 0
 	sprite.modulate = Color(1, 1, 1)
+	position = Vector2(400, 200)

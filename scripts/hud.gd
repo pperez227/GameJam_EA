@@ -65,7 +65,7 @@ func _build_enemy_hud() -> void:
 	lbl.text = "ENEMIGO"
 	lbl.position = Vector2(base_x, 6)
 	lbl.add_theme_font_size_override("font_size", 14)
-	lbl.add_theme_color_override("font_color", Color8(255, 80, 80))
+	lbl.add_theme_color_override("font_color", Color.WHITE)
 	container.add_child(lbl)
 
 	# HP bar with border
@@ -125,7 +125,7 @@ func _build_player_hud() -> void:
 	title_lbl.text = "JUGADOR"
 	title_lbl.position = Vector2(base_x, 6)
 	title_lbl.add_theme_font_size_override("font_size", 14)
-	title_lbl.add_theme_color_override("font_color", Color8(26, 92, 26))
+	title_lbl.add_theme_color_override("font_color", Color.WHITE)
 	container.add_child(title_lbl)
 
 	# HP bar
@@ -406,7 +406,7 @@ func _build_round_hud() -> void:
 	knockdown_label.size = Vector2(800, 110)
 	knockdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	knockdown_label.add_theme_font_size_override("font_size", 36)
-	knockdown_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	knockdown_label.add_theme_color_override("font_color", Color.WHITE)
 	knockdown_label.visible = false
 	add_child(knockdown_label)
 
@@ -417,7 +417,7 @@ func _build_round_hud() -> void:
 	combo_label.size = Vector2(180, 50)
 	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	combo_label.add_theme_font_size_override("font_size", 32)
-	combo_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	combo_label.add_theme_color_override("font_color", Color8(255, 230, 60))
 	combo_label.visible = false
 	add_child(combo_label)
 
@@ -450,7 +450,7 @@ func update_score(p_wins: int, e_wins: int) -> void:
 
 func show_knockdown(count: int, is_player: bool) -> void:
 	knockdown_label.visible = true
-	knockdown_label.add_theme_color_override("font_color", Color8(26, 58, 138))
+	knockdown_label.add_theme_color_override("font_color", Color.WHITE)
 	if is_player:
 		knockdown_label.text = str(count) + "\n\u00a1Presiona A y D para levantarte!"
 	else:

@@ -53,6 +53,12 @@ var super_pending: bool = false
 # Reactive block tracking (edge detection)
 var _player_was_attacking: bool = false
 
+# Post-knockdown AI cooldown
+var ai_cooldown_timer: float = 0.0
+
+func set_cooldown(time: float) -> void:
+	ai_cooldown_timer = time
+
 # ── References ───────────────────────────────────────────────────
 var enemy: CharacterBody2D
 var player: CharacterBody2D
@@ -85,6 +91,11 @@ func _process(delta: float) -> void:
 	if enemy == null or enemy.is_dead:
 		return
 	if player == null or player.is_dead:
+		return
+	
+	# Post-knockdown cooldown — AI waits
+	if ai_cooldown_timer > 0:
+		ai_cooldown_timer -= delta
 		return
 
 	# Handle super warning phase
@@ -399,3 +410,4 @@ func reset_for_round() -> void:
 	super_active_timer = 0.0
 	super_hit_timer = 0.0
 	_player_was_attacking = false
+	ai_cooldown_timer = 0.0
