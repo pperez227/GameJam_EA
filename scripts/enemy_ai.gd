@@ -97,6 +97,10 @@ func _process(delta: float) -> void:
 	if ai_cooldown_timer > 0:
 		ai_cooldown_timer -= delta
 		return
+	
+	# Stunned — skip all AI
+	if enemy.is_stunned:
+		return
 
 	# Handle super warning phase
 	if super_pending:

@@ -1,25 +1,37 @@
 extends CanvasLayer
 
-# ── HUD — Punch-Out NES style retro bars ────────────────────────
+# ── HUD — Distributed layout ────────────────────────────────────
 
-const BAR_WIDTH: float = 160.0
-const BAR_HEIGHT: float = 16.0
-const BAR_SPACING: float = 6.0
 const BORDER: float = 2.0
 
+# Enemy (top-right, HP only)
+const ENEMY_BAR_W: float = 160.0
+const ENEMY_BAR_H: float = 16.0
 var enemy_hp_bar: ColorRect
 var enemy_hp_fill: ColorRect
-var enemy_stm_bar: ColorRect
-var enemy_stm_fill: ColorRect
-var enemy_power_bar: ColorRect
-var enemy_power_fill: ColorRect
 
+# Player HP (bottom-left)
+const PLAYER_HP_W: float = 180.0
+const PLAYER_HP_H: float = 16.0
 var player_hp_bar: ColorRect
 var player_hp_fill: ColorRect
+
+# Player Stamina (vertical, left edge)
+const STM_BAR_W: float = 12.0
+const STM_BAR_H: float = 140.0
 var player_stm_bar: ColorRect
 var player_stm_fill: ColorRect
+
+# Player Power (bottom-center)
+const PWR_BAR_W: float = 200.0
+const PWR_BAR_H: float = 14.0
 var player_pwr_bar: ColorRect
 var player_pwr_fill: ColorRect
+
+# Tongue cooldown indicator
+var tongue_cd_bg: ColorRect
+var tongue_cd_fill: ColorRect
+var tongue_cd_label: Label
 
 var hint_label: Label
 
@@ -56,13 +68,13 @@ func _ready() -> void:
 	_build_miss_hud()
 	_build_round_hud()
 
-# ── Enemy HUD (top-right) ──────────────────────────────────────
+# ── Enemy HUD (top-right, HP only) ─────────────────────────────
 func _build_enemy_hud() -> void:
 	var container: Control = Control.new()
 	container.name = "EnemyHUD"
 	add_child(container)
 
-	var base_x: float = 800.0 - BAR_WIDTH - 12.0
+	var base_x: float = 800.0 - ENEMY_BAR_W - 12.0
 
 	var lbl: Label = Label.new()
 	lbl.text = "ENEMIGO"
@@ -71,12 +83,11 @@ func _build_enemy_hud() -> void:
 	lbl.add_theme_color_override("font_color", Color8(255, 255, 255))
 	container.add_child(lbl)
 
-	# HP bar with border
 	var hp_y: float = 24
-	_add_border(container, base_x, hp_y, BAR_WIDTH, BAR_HEIGHT)
-	enemy_hp_bar = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
+	_add_border(container, base_x, hp_y, ENEMY_BAR_W, ENEMY_BAR_H)
+	enemy_hp_bar = _make_bar(base_x, hp_y, ENEMY_BAR_W, ENEMY_BAR_H, Color8(30, 30, 30))
 	container.add_child(enemy_hp_bar)
-	enemy_hp_fill = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(60, 200, 60))
+	enemy_hp_fill = _make_bar(base_x, hp_y, ENEMY_BAR_W, ENEMY_BAR_H, Color8(60, 200, 60))
 	container.add_child(enemy_hp_fill)
 
 	var hp_lbl: Label = Label.new()
@@ -86,105 +97,95 @@ func _build_enemy_hud() -> void:
 	hp_lbl.add_theme_color_override("font_color", Color8(220, 220, 220))
 	container.add_child(hp_lbl)
 
-	# Stamina bar (blue) with border
-	var stm_y: float = hp_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, base_x, stm_y, BAR_WIDTH, BAR_HEIGHT)
-	enemy_stm_bar = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
-	container.add_child(enemy_stm_bar)
-	enemy_stm_fill = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(50, 130, 230))
-	container.add_child(enemy_stm_fill)
-
-	var stm_lbl: Label = Label.new()
-	stm_lbl.text = "STM"
-	stm_lbl.position = Vector2(base_x + 2, stm_y - 1)
-	stm_lbl.add_theme_font_size_override("font_size", 11)
-	stm_lbl.add_theme_color_override("font_color", Color8(220, 220, 220))
-	container.add_child(stm_lbl)
-
-	# Power bar (purple) with border
-	var pwr_y: float = stm_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, base_x, pwr_y, BAR_WIDTH, 12)
-	enemy_power_bar = _make_bar(base_x, pwr_y, BAR_WIDTH, 12, Color8(30, 30, 30))
-	container.add_child(enemy_power_bar)
-	enemy_power_fill = _make_bar(base_x, pwr_y, BAR_WIDTH, 12, Color8(160, 50, 210))
-	container.add_child(enemy_power_fill)
-
-	var pwr_lbl: Label = Label.new()
-	pwr_lbl.text = "SUPER"
-	pwr_lbl.position = Vector2(base_x + 2, pwr_y - 2)
-	pwr_lbl.add_theme_font_size_override("font_size", 9)
-	pwr_lbl.add_theme_color_override("font_color", Color8(200, 150, 255))
-	container.add_child(pwr_lbl)
-
-# ── Player HUD (top-left) ──────────────────────────────────────
+# ── Player HUD (distributed) ──────────────────────────────────
 func _build_player_hud() -> void:
 	var container: Control = Control.new()
 	container.name = "PlayerHUD"
 	add_child(container)
 
-	var base_x: float = 12.0
-
+	# ── HP bar (bottom-left) ──
+	var hp_x: float = 12.0
+	var hp_y: float = 440.0
 	var title_lbl: Label = Label.new()
 	title_lbl.text = "JUGADOR"
-	title_lbl.position = Vector2(base_x, 6)
-	title_lbl.add_theme_font_size_override("font_size", 14)
+	title_lbl.position = Vector2(hp_x, hp_y - 18)
+	title_lbl.add_theme_font_size_override("font_size", 12)
 	title_lbl.add_theme_color_override("font_color", Color8(255, 255, 255))
 	container.add_child(title_lbl)
 
-	# HP bar
-	var hp_y: float = 24
-	_add_border(container, base_x, hp_y, BAR_WIDTH, BAR_HEIGHT)
-	player_hp_bar = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
+	_add_border(container, hp_x, hp_y, PLAYER_HP_W, PLAYER_HP_H)
+	player_hp_bar = _make_bar(hp_x, hp_y, PLAYER_HP_W, PLAYER_HP_H, Color8(30, 30, 30))
 	container.add_child(player_hp_bar)
-	player_hp_fill = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(60, 200, 60))
+	player_hp_fill = _make_bar(hp_x, hp_y, PLAYER_HP_W, PLAYER_HP_H, Color8(60, 200, 60))
 	container.add_child(player_hp_fill)
 
 	var hp_lbl: Label = Label.new()
 	hp_lbl.text = "HP"
-	hp_lbl.position = Vector2(base_x + 2, hp_y - 1)
+	hp_lbl.position = Vector2(hp_x + 2, hp_y - 1)
 	hp_lbl.add_theme_font_size_override("font_size", 11)
 	hp_lbl.add_theme_color_override("font_color", Color8(220, 220, 220))
 	container.add_child(hp_lbl)
 
-	# Stamina bar (blue)
-	var stm_y: float = hp_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, base_x, stm_y, BAR_WIDTH, BAR_HEIGHT)
-	player_stm_bar = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
-	container.add_child(player_stm_bar)
-	player_stm_fill = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(50, 130, 230))
-	container.add_child(player_stm_fill)
-
+	# ── Stamina bar (vertical, left edge) ──
+	var stm_x: float = 6.0
+	var stm_y: float = 200.0
 	var stm_lbl: Label = Label.new()
 	stm_lbl.text = "STM"
-	stm_lbl.position = Vector2(base_x + 2, stm_y - 1)
-	stm_lbl.add_theme_font_size_override("font_size", 11)
-	stm_lbl.add_theme_color_override("font_color", Color8(220, 220, 220))
+	stm_lbl.position = Vector2(stm_x - 2, stm_y - 16)
+	stm_lbl.add_theme_font_size_override("font_size", 9)
+	stm_lbl.add_theme_color_override("font_color", Color8(180, 200, 255))
 	container.add_child(stm_lbl)
 
-	# Power bar (yellow/orange)
-	var pwr_y: float = stm_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, base_x, pwr_y, BAR_WIDTH, BAR_HEIGHT)
-	player_pwr_bar = _make_bar(base_x, pwr_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
-	container.add_child(player_pwr_bar)
-	player_pwr_fill = _make_bar(base_x, pwr_y, BAR_WIDTH, BAR_HEIGHT, Color8(240, 190, 40))
-	container.add_child(player_pwr_fill)
+	_add_border(container, stm_x, stm_y, STM_BAR_W, STM_BAR_H)
+	player_stm_bar = _make_bar(stm_x, stm_y, STM_BAR_W, STM_BAR_H, Color8(30, 30, 30))
+	container.add_child(player_stm_bar)
+	# Fill starts at bottom — position adjusted in update
+	player_stm_fill = _make_bar(stm_x, stm_y + STM_BAR_H, STM_BAR_W, 0, Color8(50, 130, 230))
+	container.add_child(player_stm_fill)
 
-	var pwr_lbl: Label = Label.new()
-	pwr_lbl.text = "PWR"
-	pwr_lbl.position = Vector2(base_x + 2, pwr_y - 1)
-	pwr_lbl.add_theme_font_size_override("font_size", 11)
-	pwr_lbl.add_theme_color_override("font_color", Color8(220, 220, 220))
-	container.add_child(pwr_lbl)
+	# ── Tongue cooldown indicator (below stamina) ──
+	var tongue_x: float = 4.0
+	var tongue_y: float = stm_y + STM_BAR_H + 10.0
+	var tongue_size: float = 18.0
+	_add_border(container, tongue_x, tongue_y, tongue_size, tongue_size)
+	tongue_cd_bg = _make_bar(tongue_x, tongue_y, tongue_size, tongue_size, Color8(40, 40, 40))
+	container.add_child(tongue_cd_bg)
+	tongue_cd_fill = _make_bar(tongue_x, tongue_y, tongue_size, 0, Color8(255, 100, 150))
+	container.add_child(tongue_cd_fill)
+	tongue_cd_label = Label.new()
+	tongue_cd_label.text = "K"
+	tongue_cd_label.position = Vector2(tongue_x + 2, tongue_y - 1)
+	tongue_cd_label.add_theme_font_size_override("font_size", 12)
+	tongue_cd_label.add_theme_color_override("font_color", Color8(180, 180, 180))
+	container.add_child(tongue_cd_label)
+
+	# ── Power bar (bottom-center) ──
+	var pwr_x: float = 300.0
+	var pwr_y: float = 454.0
+	var super_lbl: Label = Label.new()
+	super_lbl.text = "SUPER"
+	super_lbl.position = Vector2(pwr_x, pwr_y - 16)
+	super_lbl.size = Vector2(PWR_BAR_W, 16)
+	super_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	super_lbl.add_theme_font_size_override("font_size", 10)
+	super_lbl.add_theme_color_override("font_color", Color8(255, 230, 140))
+	container.add_child(super_lbl)
+
+	_add_border(container, pwr_x, pwr_y, PWR_BAR_W, PWR_BAR_H)
+	player_pwr_bar = _make_bar(pwr_x, pwr_y, PWR_BAR_W, PWR_BAR_H, Color8(30, 30, 30))
+	container.add_child(player_pwr_bar)
+	player_pwr_fill = _make_bar(pwr_x, pwr_y, PWR_BAR_W, PWR_BAR_H, Color8(240, 190, 40))
+	container.add_child(player_pwr_fill)
 
 # ── Hint label (bottom-center) ──────────────────────────────────
 func _build_hint() -> void:
 	hint_label = Label.new()
-	hint_label.text = "WASD: MOVER  |  J: GOLPE S.  |  K: GOLPE F.  |  L: SUPER  |  SPACE: BLOQUEO"
-	hint_label.position = Vector2(0, 460)
-	hint_label.size = Vector2(800, 20)
+	hint_label.text = "WASD: MOVER  |  J: GOLPE  |  K: LENGUA  |  L: SUPER  |  SPACE: BLOQUEO"
+	hint_label.position = Vector2(0, 468)
+	hint_label.size = Vector2(800, 16)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 11)
-	hint_label.add_theme_color_override("font_color", Color8(180, 180, 180))
+	hint_label.add_theme_font_size_override("font_size", 10)
+	hint_label.add_theme_color_override("font_color", Color8(160, 160, 160))
 	add_child(hint_label)
 
 func _build_miss_hud() -> void:
@@ -319,7 +320,7 @@ func end_qte() -> void:
 
 # ── Update methods (unchanged logic) ────────────────────────────
 func update_player_hp(value: float) -> void:
-	player_hp_fill.size.x = BAR_WIDTH * clampf(value / 100.0, 0.0, 1.0)
+	player_hp_fill.size.x = PLAYER_HP_W * clampf(value / 100.0, 0.0, 1.0)
 	var ratio: float = value / 100.0
 	if ratio > 0.5:
 		player_hp_fill.color = Color8(60, 200, 60)
@@ -329,17 +330,19 @@ func update_player_hp(value: float) -> void:
 		player_hp_fill.color = Color8(220, 50, 50)
 
 func update_player_stamina(value: float) -> void:
-	player_stm_fill.size.x = BAR_WIDTH * clampf(value, 0.0, 1.0)
+	var fill_h: float = STM_BAR_H * clampf(value, 0.0, 1.0)
+	player_stm_fill.size.y = fill_h
+	player_stm_fill.position.y = 200.0 + STM_BAR_H - fill_h
 
 func update_player_power(value: float) -> void:
-	player_pwr_fill.size.x = BAR_WIDTH * clampf(value, 0.0, 1.0)
+	player_pwr_fill.size.x = PWR_BAR_W * clampf(value, 0.0, 1.0)
 	if value >= 1.0:
 		player_pwr_fill.color = Color8(255, 230, 60)
 	else:
 		player_pwr_fill.color = Color8(240, 190, 40)
 
 func update_enemy_hp(value: float) -> void:
-	enemy_hp_fill.size.x = BAR_WIDTH * clampf(value / 100.0, 0.0, 1.0)
+	enemy_hp_fill.size.x = ENEMY_BAR_W * clampf(value / 100.0, 0.0, 1.0)
 	var ratio: float = value / 100.0
 	if ratio > 0.5:
 		enemy_hp_fill.color = Color8(60, 200, 60)
@@ -348,11 +351,24 @@ func update_enemy_hp(value: float) -> void:
 	else:
 		enemy_hp_fill.color = Color8(220, 50, 50)
 
-func update_enemy_stamina(value: float) -> void:
-	enemy_stm_fill.size.x = BAR_WIDTH * clampf(value, 0.0, 1.0)
+func update_enemy_stamina(_value: float) -> void:
+	pass  # Enemy stamina hidden
 
-func update_enemy_power(value: float) -> void:
-	enemy_power_fill.size.x = BAR_WIDTH * clampf(value, 0.0, 1.0)
+func update_enemy_power(_value: float) -> void:
+	pass  # Enemy power hidden
+
+func update_tongue_cooldown(ratio: float) -> void:
+	# ratio = remaining cooldown / max (1.0 = full cooldown, 0.0 = ready)
+	var ready_ratio: float = 1.0 - clampf(ratio, 0.0, 1.0)
+	var fill_h: float = 18.0 * ready_ratio
+	tongue_cd_fill.size.y = fill_h
+	tongue_cd_fill.position.y = (200.0 + STM_BAR_H + 10.0) + 18.0 - fill_h
+	if ratio <= 0:
+		tongue_cd_fill.color = Color8(100, 255, 100)
+		tongue_cd_label.add_theme_color_override("font_color", Color8(100, 255, 100))
+	else:
+		tongue_cd_fill.color = Color8(255, 100, 150)
+		tongue_cd_label.add_theme_color_override("font_color", Color8(180, 180, 180))
 
 # ── Helpers ─────────────────────────────────────────────────────
 func _make_bar(x: float, y: float, w: float, h: float, color: Color) -> ColorRect:

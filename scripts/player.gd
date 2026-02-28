@@ -6,6 +6,7 @@ signal player_attacked(hit: bool)
 signal player_dead()
 signal player_knocked_down()
 signal attack_launched(attack_type: String)
+signal tongue_hit()
 
 # QTE Signals
 signal qte_started(sequence: Array[String], time_limit: float)
@@ -26,12 +27,15 @@ const BOT_RIGHT_X: float = 660.0
 const MAX_HP: float = 100.0
 const STAMINA_REGEN: float = 0.42
 const SOFT_ATTACK_STAMINA_COST: float = 0.15
-const HARD_ATTACK_STAMINA_COST: float = 0.30
 const BLOCK_STAMINA_DRAIN: float = 0.25
 const ATTACK_COOLDOWN: float = 0.18
+
+# Tongue grab constants
+const TONGUE_COOLDOWN: float = 3.0
+const TONGUE_RANGE: float = 130.0
+const TONGUE_EXTEND_TIME: float = 0.15
 const ATTACK_DURATION: float = 0.15
 const SOFT_ATTACK_DAMAGE: float = 8.0
-const HARD_ATTACK_DAMAGE: float = 18.0
 const SPECIAL_DAMAGE: float = 35.0
 const SPECIAL_COOLDOWN: float = 0.3
 const POWER_PER_HIT: float = 0.25
@@ -70,6 +74,12 @@ var is_dashing: bool = false
 var dash_timer: float = 0.0
 var dash_cooldown_timer: float = 0.0
 var dash_direction: Vector2 = Vector2.ZERO
+
+# Tongue grab state
+var tongue_cooldown_timer: float = 0.0
+var is_tongue_active: bool = false
+var tongue_timer: float = 0.0
+var tongue_line: Line2D
 
 var is_blocking: bool = false
 var is_block_broken: bool = false
@@ -205,6 +215,42 @@ func _build_shadow() -> void:
 	shadow.z_index = -1
 	add_child(shadow)
 
+	# Tongue visual (pink line)
+	tongue_line = Line2D.new()
+	tongue_line.name = "TongueLine"
+	tongue_line.width = 4.0
+	tongue_line.default_color = Color8(255, 100, 150)
+	tongue_line.z_index = 5
+	tongue_line.visible = false
+	tongue_line.add_point(Vector2.ZERO)
+	tongue_line.add_point(Vector2.ZERO)
+	add_child(tongue_line)
+
+# ── Tongue grab ─────────────────────────────────────────────────
+func _start_tongue() -> void:
+	is_tongue_active = true
+	tongue_timer = TONGUE_EXTEND_TIME
+	tongue_cooldown_timer = TONGUE_COOLDOWN
+	tongue_line.visible = true
+	tongue_line.set_point_position(0, Vector2.ZERO)
+	tongue_line.set_point_position(1, Vector2.ZERO)
+
+func _handle_tongue(delta: float) -> void:
+	if tongue_cooldown_timer > 0 and not is_tongue_active:
+		tongue_cooldown_timer -= delta
+	if not is_tongue_active:
+		return
+	tongue_timer -= delta
+	# Animate tongue extending toward attack_direction
+	var progress: float = 1.0 - clampf(tongue_timer / TONGUE_EXTEND_TIME, 0.0, 1.0)
+	var end_pos: Vector2 = attack_direction * TONGUE_RANGE * progress
+	tongue_line.set_point_position(1, end_pos)
+	if tongue_timer <= 0:
+		tongue_hit.emit()
+		# Start retract (instant)
+		is_tongue_active = false
+		tongue_line.visible = false
+
 # ── Process ──────────────────────────────────────────────────────
 func _process(delta: float) -> void:
 	if is_dead:
@@ -215,6 +261,7 @@ func _process(delta: float) -> void:
 	_handle_attack_timers(delta)
 	_handle_block_broken_timer(delta)
 	_handle_combo_timer(delta)
+	_handle_tongue(delta)
 	
 	if is_in_qte:
 		_handle_qte_timer(delta)
@@ -331,8 +378,8 @@ func _handle_input() -> void:
 	if Input.is_action_just_pressed("soft_attack") and stamina >= SOFT_ATTACK_STAMINA_COST:
 		_start_attack("soft", SOFT_ATTACK_STAMINA_COST)
 		return
-	if Input.is_action_just_pressed("hard_attack") and stamina >= HARD_ATTACK_STAMINA_COST:
-		_start_attack("hard", HARD_ATTACK_STAMINA_COST)
+	if Input.is_action_just_pressed("hard_attack") and tongue_cooldown_timer <= 0 and not is_tongue_active:
+		_start_tongue()
 		return
 	# Dash with Shift
 	if Input.is_action_just_pressed("dash") and dash_cooldown_timer <= 0 and not is_dashing:
@@ -432,9 +479,7 @@ func get_current_damage() -> float:
 		final_multiplier = qte_damage_multiplier
 	elif current_attack_type == "special_startup":
 		return 0.0 # Does no damage, just triggers QTE
-	elif current_attack_type == "hard":
-		base_damage = HARD_ATTACK_DAMAGE
-		final_multiplier = 1.0 + (min(combo_count, 10) * 0.1)
+
 	else:
 		base_damage = SOFT_ATTACK_DAMAGE
 		final_multiplier = 1.0 + (min(combo_count, 10) * 0.1)
@@ -519,5 +564,10 @@ func reset_for_round() -> void:
 	is_dashing = false
 	dash_timer = 0.0
 	dash_cooldown_timer = 0.0
+	tongue_cooldown_timer = 0.0
+	is_tongue_active = false
+	tongue_timer = 0.0
+	if tongue_line:
+		tongue_line.visible = false
 	attack_direction = Vector2(0, -1)
 	position = Vector2(400, 400)

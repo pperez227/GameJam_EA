@@ -150,6 +150,7 @@ func _ready() -> void:
 
 	# Attack launch signals (for whoosh sounds)
 	player.attack_launched.connect(_on_player_attack_launched)
+	player.tongue_hit.connect(_on_tongue_hit)
 	enemy.enemy_attack_launched.connect(_on_enemy_attack_launched)
 
 	# Build UI overlays
@@ -378,6 +379,7 @@ func _update_hud() -> void:
 	hud.update_enemy_hp(enemy.hp)
 	hud.update_enemy_stamina(enemy.stamina)
 	hud.update_enemy_power(enemy.power)
+	hud.update_tongue_cooldown(player.tongue_cooldown_timer / player.TONGUE_COOLDOWN)
 
 # ── Hit detection (distance-based, checked every physics frame) ─
 func _physics_process(_delta: float) -> void:
@@ -500,6 +502,20 @@ func _on_enemy_dead() -> void:
 func _on_enemy_super_activated() -> void:
 	enemy_ai.activate_super()
 
+func _on_tongue_hit() -> void:
+	if state != GameState.FIGHTING:
+		return
+	var dist: float = player.position.distance_to(enemy.position)
+	if dist <= player.TONGUE_RANGE:
+		# Pull enemy to 70px from player
+		var pull_dir: Vector2 = (player.position - enemy.position).normalized()
+		var target_pos: Vector2 = player.position - pull_dir * 70.0
+		enemy.position = target_pos
+		enemy._clamp_to_ring()
+		enemy.apply_stun(1.0)
+		enemy_ai.set_cooldown(1.0)
+		screen_effects.shake(4.0, 0.2)
+
 func _on_qte_started(sequence: Array[String], time_limit: float) -> void:
 	enemy_ai.set_qte_slowdown(true)
 	qte_sequence_cache = sequence.duplicate()
@@ -537,8 +553,6 @@ func _on_player_attack_launched(attack_type: String) -> void:
 	match attack_type:
 		"soft":
 			_play_sfx_safe(sfx_whoosh_soft)
-		"hard":
-			_play_sfx_safe(sfx_whoosh_hard)
 		"super":
 			_play_sfx_safe(sfx_whoosh_super)
 

@@ -38,6 +38,8 @@ var attack_active_timer: float = 0.0
 var is_blocking: bool = false
 var is_block_broken: bool = false
 var block_broken_timer: float = 0.0
+var is_stunned: bool = false
+var stun_timer: float = 0.0
 
 # ── Node references ─────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite
@@ -174,6 +176,13 @@ func _build_shadow() -> void:
 func _process(delta: float) -> void:
 	if is_dead:
 		return
+	if is_stunned:
+		stun_timer -= delta
+		sprite.modulate = Color(0.5, 0.5, 1.0)
+		if stun_timer <= 0:
+			is_stunned = false
+			sprite.modulate = Color(1, 1, 1)
+		return
 	_handle_attack_timer(delta)
 	_handle_stamina(delta)
 	_handle_block_broken_timer(delta)
@@ -268,6 +277,12 @@ func apply_stagger(direction: Vector2, strength: float = 30.0) -> void:
 	position += direction.normalized() * strength
 	_clamp_to_ring()
 
+func apply_stun(duration: float) -> void:
+	is_stunned = true
+	stun_timer = duration
+	cancel_attack()
+	is_blocking = false
+
 func _clamp_to_ring() -> void:
 	position.y = clampf(position.y, MIN_Y, MAX_Y)
 	var t: float = (position.y - MIN_Y) / (MAX_Y - MIN_Y)
@@ -309,6 +324,8 @@ func reset_for_round() -> void:
 	is_blocking = false
 	is_block_broken = false
 	block_broken_timer = 0.0
+	is_stunned = false
+	stun_timer = 0.0
 	punch_collision.disabled = true
 	sprite.rotation = 0
 	sprite.modulate = Color(1, 1, 1)
