@@ -1,5 +1,7 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1772276940
+::res://::1772278036
+deadly strike.mp3::AudioStreamMP3::6024180360245289118::1772274668::1772278037::1::::<><><>0<>0<>a9832b1830bf611c01eb2cafbdd5eddb<>res://.godot/imported/deadly strike.mp3-0c5043d20309816d657c0dfeae523f42.mp3str::
+punch.mp3::AudioStreamMP3::2026683446456954686::1772274496::1772278037::1::::<><><>0<>0<>d34ddcd0a03dbc59133e7b24fc5f4443<>res://.godot/imported/punch.mp3-1144533abe62ba7217d63550815cd7c8.mp3str::
 ::res://scenes/::1772274605
 Enemy.tscn::PackedScene::3801962418576::1772274605::0::1::::<><><>0<>0<><>::res://scripts/enemy.gd<>res://scripts/enemy_ai.gd
 HUD.tscn::PackedScene::3970318076168::1772274605::0::1::::<><><>0<>0<><>::res://scripts/hud.gd
@@ -9,12 +11,12 @@ Player.tscn::PackedScene::4376463160336::1772274605::0::1::::<><><>0<>0<><>::res
 Ring.tscn::PackedScene::131689496720::1772274605::0::1::::<><><>0<>0<><>::res://scripts/ring.gd
 ScreenEffects.tscn::PackedScene::3790484667976::1772274605::0::1::::<><><>0<>0<><>::res://scripts/screen_effects.gd
 ::res://scripts/::1772274605
-enemy.gd::GDScript::4852094403118010994::1772276546::0::1::::<>CharacterBody2D<><>0<>0<><>::
+enemy.gd::GDScript::4852094403118010994::1772277915::0::1::::<>CharacterBody2D<><>0<>0<><>::
 enemy_ai.gd::GDScript::6210956263608434300::1772274605::0::1::::<>Node<><>0<>0<><>::
-game_manager.gd::GDScript::5950466217698019835::1772274605::0::1::::<>Node<><>0<>0<><>::
+game_manager.gd::GDScript::5950466217698019835::1772277941::0::1::::<>Node<><>0<>0<><>::
 hud.gd::GDScript::2363245444191375924::1772274605::0::1::::<>CanvasLayer<><>0<>0<><>::
 particle_manager.gd::GDScript::230823867657408328::1772274605::0::1::::<>Node2D<><>0<>0<><>::
-player.gd::GDScript::3774160033093512966::1772276540::0::1::::<>CharacterBody2D<><>0<>0<><>::
+player.gd::GDScript::3774160033093512966::1772277902::0::1::::<>CharacterBody2D<><>0<>0<><>::
 ring.gd::GDScript::8435806162787739812::1772274605::0::1::::<>Node2D<><>0<>0<><>::
 screen_effects.gd::GDScript::4569254432318922606::1772274605::0::1::::<>CanvasLayer<><>0<>0<><>::
 ::res://sprites/::1772276789
