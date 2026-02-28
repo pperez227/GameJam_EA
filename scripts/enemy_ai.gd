@@ -3,7 +3,7 @@ extends Node
 # ── Enemy AI State Machine ───────────────────────────────────────
 # Attached as a child of Enemy, controls movement and attack decisions.
 
-enum State { APPROACH, DASH, CIRCLE, ATTACK, SUPER }
+enum State { APPROACH, DASH, CIRCLE, ATTACK, SUPER, BLOCK }
 
 # ── Configuration ────────────────────────────────────────────────
 const APPROACH_SPEED: float = 1560.0   # 130 * 12
@@ -22,6 +22,10 @@ var current_state: State = State.APPROACH
 var phase_timer: float = 0.5
 var attack_cooldown: float = 0.0
 var circle_direction: float = 1.0
+
+# QTE State
+var qte_slowdown: bool = false
+var slowdown_factor: float = 0.0
 
 # Super state
 var super_warning_timer: float = 0.0
@@ -56,21 +60,28 @@ func _process(delta: float) -> void:
 		_handle_super_active(delta)
 		return
 
+	# Determine effective delta based on QTE slowdown
+	var effective_delta = delta * (slowdown_factor if qte_slowdown else 1.0)
+	if enemy.stamina <= 0.1:
+		effective_delta *= 0.6
+		
 	# Decrease timers
-	phase_timer -= delta
+	phase_timer -= effective_delta
 	if attack_cooldown > 0:
-		attack_cooldown -= delta
+		attack_cooldown -= effective_delta
 
-	# Execute current state
+	# Execute current state (using effective_delta)
 	match current_state:
 		State.APPROACH:
-			_state_approach(delta)
+			_state_approach(effective_delta)
 		State.DASH:
-			_state_dash(delta)
+			_state_dash(effective_delta)
 		State.CIRCLE:
-			_state_circle(delta)
+			_state_circle(effective_delta)
 		State.ATTACK:
-			_state_attack(delta)
+			_state_attack(effective_delta)
+		State.BLOCK:
+			_state_block(effective_delta)
 
 	# Transition check
 	if phase_timer <= 0:
@@ -122,6 +133,15 @@ func _state_attack(delta: float) -> void:
 				circle_direction = 1.0 if randf() < 0.5 else -1.0
 				_enter_state(State.CIRCLE, randf_range(0.25, 0.5))
 
+func _state_block(delta: float) -> void:
+	enemy.is_blocking = true
+	var dir: Vector2 = (enemy.position - player.position).normalized()
+	enemy.position += dir * 800.0 * delta * 0.01
+	
+	if enemy.is_block_broken:
+		enemy.is_blocking = false
+		_enter_state(State.DASH, 0.3)
+
 # ── Super ────────────────────────────────────────────────────────
 func activate_super() -> void:
 	super_pending = true
@@ -162,6 +182,9 @@ func _choose_next_state() -> void:
 		_enter_state(State.APPROACH, 0.5)
 	elif attack_cooldown <= 0 and dist < 200.0 and roll < 0.75:
 		_enter_state(State.ATTACK, 0.35)
+	elif attack_cooldown > 0 and dist < 150.0 and roll < 0.6:
+		enemy.is_blocking = true
+		_enter_state(State.BLOCK, randf_range(0.4, 0.8))
 	elif roll < 0.4:
 		_enter_state(State.DASH, 0.3)
 	else:
@@ -171,6 +194,13 @@ func _choose_next_state() -> void:
 func _enter_state(new_state: State, duration: float) -> void:
 	current_state = new_state
 	phase_timer = duration
+	if new_state != State.BLOCK:
+		enemy.is_blocking = false
+
+func set_qte_slowdown(active: bool) -> void:
+	qte_slowdown = active
+	if active:
+		enemy.cancel_attack()
 
 # ── Called when enemy takes damage (from GameManager) ────────────
 func on_enemy_damaged() -> void:

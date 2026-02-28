@@ -5,6 +5,13 @@ signal player_hit(damage: float)
 signal player_attacked(hit: bool)
 signal player_dead()
 
+# QTE Signals
+signal qte_started(sequence: Array[String], time_limit: float)
+signal qte_progress(current_index: int, sequence_size: int)
+signal qte_mistake(multiplier: float)
+signal qte_ended()
+signal qte_missed()
+
 # ── Constants ────────────────────────────────────────────────────
 const SPEED: float = 200.0
 const MIN_X: float = 70.0
@@ -14,34 +21,83 @@ const MAX_Y: float = 430.0
 
 const MAX_HP: float = 100.0
 const STAMINA_REGEN: float = 0.12
-const PUNCH_STAMINA_COST: float = 0.22
-const PUNCH_COOLDOWN: float = 0.18
-const PUNCH_DURATION: float = 0.15
-const PUNCH_DAMAGE: float = 10.0
+const SOFT_ATTACK_STAMINA_COST: float = 0.15
+const HARD_ATTACK_STAMINA_COST: float = 0.30
+const BLOCK_STAMINA_DRAIN: float = 0.25
+const ATTACK_COOLDOWN: float = 0.18
+const ATTACK_DURATION: float = 0.15
+const SOFT_ATTACK_DAMAGE: float = 10.0
+const HARD_ATTACK_DAMAGE: float = 25.0
 const SPECIAL_DAMAGE: float = 40.0
 const SPECIAL_COOLDOWN: float = 0.3
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
+const COMBO_TIMEOUT: float = 1.5
+
+const QTE_TIME_LIMIT: float = 3.5
+const QTE_PENALTY_PER_MISTAKE: float = 0.15
+const QTE_TIMEOUT_PENALTY: float = 0.10
 
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP
 var stamina: float = 1.0
-var power: float = 0.0
+var power: float = 1.0
 var attack_cooldown_timer: float = 0.0
 var attack_active_timer: float = 0.0
 var is_attacking: bool = false
-var is_special: bool = false
+var is_special: bool = true
+var current_attack_type: String = ""
 var hit_timer: float = 0.0
 var is_dead: bool = false
+
+var is_blocking: bool = false
+var is_block_broken: bool = false
+var block_broken_timer: float = 0.0
+var combo_count: int = 0
+var combo_timer: float = 0.0
+
+var is_in_qte: bool = false
+var qte_sequence: Array[String] = []
+var qte_current_index: int = 0
+var qte_timer: float = 0.0
+var qte_damage_multiplier: float = 1.0
+
+# QTE Key Mapping
+const QTE_ACTIONS = {
+	"move_up": "W", "move_down": "S", "move_left": "A", "move_right": "D",
+	"soft_attack": "J", "hard_attack": "K", "special": "L"
+}
+var qte_keys = ["W", "A", "S", "D", "J", "K", "L"]
+var qte_action_names = ["move_up", "move_down", "move_left", "move_right", "soft_attack", "hard_attack", "special"]
 
 # ── Node references ─────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite
 @onready var punch_area: Area2D = $PunchArea
 @onready var punch_collision: CollisionShape2D = $PunchArea/PunchCollision
 
+var tex_idle: Texture2D
+var tex_punch: Texture2D
+
 # ── Ready ────────────────────────────────────────────────────────
 func _ready() -> void:
-	_build_placeholder_sprite()
+	var img_idle = Image.new()
+	if img_idle.load("res://sprites/Player.png") == OK:
+		tex_idle = ImageTexture.create_from_image(img_idle)
+		
+	var img_punch = Image.new()
+	if img_punch.load("res://sprites/Player-punch.png") == OK:
+		tex_punch = ImageTexture.create_from_image(img_punch)
+
+	if tex_idle != null:
+		sprite.texture = tex_idle
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var s = tex_idle.get_size()
+		if s.y > 0:
+			var scale_factor = 90.0 / s.y
+			sprite.scale = Vector2(scale_factor, scale_factor)
+	else:
+		_build_placeholder_sprite()
+		
 	_build_shadow()
 	punch_collision.disabled = true
 	position = Vector2(400, 400)
@@ -130,23 +186,81 @@ func _process(delta: float) -> void:
 	_handle_movement(delta)
 	_handle_stamina(delta)
 	_handle_attack_timers(delta)
-	_handle_input()
+	_handle_block_broken_timer(delta)
+	_handle_combo_timer(delta)
+	
+	if is_in_qte:
+		_handle_qte_timer(delta)
+		_handle_qte_input()
+	else:
+		_handle_input()
+	
 	_handle_hit_flash(delta)
 
+func _handle_qte_timer(delta: float) -> void:
+	qte_timer -= delta
+	if qte_timer <= 0:
+		# Timer ran out
+		qte_damage_multiplier -= QTE_TIMEOUT_PENALTY
+		_finish_qte()
+
+func _handle_qte_input() -> void:
+	for action in qte_action_names:
+		if Input.is_action_just_pressed(action):
+			var expected_key = qte_sequence[qte_current_index]
+			var pressed_key = QTE_ACTIONS[action]
+			
+			if pressed_key == expected_key:
+				qte_current_index += 1
+				qte_progress.emit(qte_current_index, qte_sequence.size())
+				if qte_current_index >= qte_sequence.size():
+					_finish_qte()
+					return
+			else:
+				qte_damage_multiplier = maxf(qte_damage_multiplier - QTE_PENALTY_PER_MISTAKE, 0.1)
+				qte_mistake.emit(qte_damage_multiplier)
+			
+			# Exit loop after processing first pressed key this frame
+			return
+
+func _handle_block_broken_timer(delta: float) -> void:
+	if is_block_broken:
+		block_broken_timer -= delta
+		if block_broken_timer <= 0:
+			is_block_broken = false
+
+func _handle_combo_timer(delta: float) -> void:
+	if combo_count > 0:
+		combo_timer -= delta
+		if combo_timer <= 0:
+			combo_count = 0
+
 func _handle_movement(delta: float) -> void:
+	if is_blocking or is_block_broken or is_in_qte:
+		return
 	var dir: Vector2 = Vector2.ZERO
 	dir.x = Input.get_axis("move_left", "move_right")
 	dir.y = Input.get_axis("move_up", "move_down")
 	if dir.length() > 0:
 		dir = dir.normalized()
-	position += dir * SPEED * delta
+		
+	var current_speed = SPEED
+	if stamina <= 0.1:
+		current_speed *= 0.6
+		
+	position += dir * current_speed * delta
 	position.x = clampf(position.x, MIN_X, MAX_X)
 	position.y = clampf(position.y, MIN_Y, MAX_Y)
 
 func _handle_stamina(delta: float) -> void:
-	stamina = clampf(stamina + STAMINA_REGEN * delta, 0.0, 1.0)
+	if not is_blocking and not is_block_broken:
+		stamina = clampf(stamina + STAMINA_REGEN * delta, 0.0, 1.0)
+		if stamina >= 1.0 and hp > 0 and hp < MAX_HP:
+			hp = minf(hp + 5.0 * delta, MAX_HP)
 
 func _handle_attack_timers(delta: float) -> void:
+	if is_in_qte:
+		return
 	if attack_cooldown_timer > 0:
 		attack_cooldown_timer -= delta
 	if attack_active_timer > 0:
@@ -155,65 +269,146 @@ func _handle_attack_timers(delta: float) -> void:
 			_end_attack()
 
 func _handle_input() -> void:
+	if is_block_broken:
+		return
+	
+	is_blocking = Input.is_action_pressed("block")
+	if is_blocking:
+		return
+		
 	if attack_cooldown_timer > 0:
 		return
 	if Input.is_action_just_pressed("special") and power >= 1.0:
-		_start_special()
+		_attempt_special()
 		return
-	if Input.is_action_just_pressed("punch") and stamina >= PUNCH_STAMINA_COST:
-		_start_punch()
+	if Input.is_action_just_pressed("soft_attack") and stamina >= SOFT_ATTACK_STAMINA_COST:
+		_start_attack("soft", SOFT_ATTACK_STAMINA_COST)
+		return
+	if Input.is_action_just_pressed("hard_attack") and stamina >= HARD_ATTACK_STAMINA_COST:
+		_start_attack("hard", HARD_ATTACK_STAMINA_COST)
+		return
 
-func _start_punch() -> void:
-	stamina -= PUNCH_STAMINA_COST
+func _start_attack(type: String, cost: float) -> void:
+	stamina -= cost
 	is_attacking = true
 	is_special = false
-	attack_cooldown_timer = PUNCH_COOLDOWN
-	attack_active_timer = PUNCH_DURATION
+	current_attack_type = type
+	attack_cooldown_timer = ATTACK_COOLDOWN
+	attack_active_timer = ATTACK_DURATION
 	punch_collision.disabled = false
+	if tex_punch != null:
+		sprite.texture = tex_punch
 
-func _start_special() -> void:
+func _attempt_special() -> void:
+	power = 0.0 # Consume power
 	is_attacking = true
 	is_special = true
-	power = 0.0
+	current_attack_type = "special_startup"
 	attack_cooldown_timer = SPECIAL_COOLDOWN
-	attack_active_timer = PUNCH_DURATION
+	attack_active_timer = ATTACK_DURATION
+	punch_collision.disabled = false
+	if tex_punch != null:
+		sprite.texture = tex_punch
+
+func start_qte() -> void:
+	is_in_qte = true
+	qte_damage_multiplier = 1.0
+	qte_current_index = 0
+	qte_timer = QTE_TIME_LIMIT
+	qte_sequence.clear()
+	punch_collision.disabled = true
+	
+	# Generate 5 to 8 random inputs
+	var seq_length = randi_range(5, 8)
+	for i in range(seq_length):
+		qte_sequence.append(qte_keys[randi() % qte_keys.size()])
+		
+	qte_started.emit(qte_sequence, QTE_TIME_LIMIT)
+
+func _finish_qte() -> void:
+	is_in_qte = false
+	qte_ended.emit()
+	is_attacking = true
+	is_special = true
+	current_attack_type = "special_execute"
+	attack_active_timer = ATTACK_DURATION
 	punch_collision.disabled = false
 
 func _end_attack() -> void:
+	if current_attack_type == "special_startup":
+		qte_missed.emit()
+		
 	is_attacking = false
 	is_special = false
+	current_attack_type = ""
 	punch_collision.disabled = true
+	if tex_idle != null:
+		sprite.texture = tex_idle
 
 func on_punch_connected() -> void:
-	if not is_special:
+	if current_attack_type != "special_execute" and current_attack_type != "special_startup":
 		power = clampf(power + POWER_PER_HIT, 0.0, 1.0)
+	combo_count += 1
+	combo_timer = COMBO_TIMEOUT
 	player_attacked.emit(true)
 
 func get_current_damage() -> float:
-	if is_special:
-		return SPECIAL_DAMAGE
-	return PUNCH_DAMAGE
+	var base_damage = 0.0
+	var final_multiplier = 1.0
+	
+	if current_attack_type == "special_execute":
+		base_damage = SPECIAL_DAMAGE
+		final_multiplier = qte_damage_multiplier
+	elif current_attack_type == "special_startup":
+		return 0.0 # Does no damage, just triggers QTE
+	elif current_attack_type == "hard":
+		base_damage = HARD_ATTACK_DAMAGE
+		final_multiplier = 1.0 + (min(combo_count, 10) * 0.1)
+	else:
+		base_damage = SOFT_ATTACK_DAMAGE
+		final_multiplier = 1.0 + (min(combo_count, 10) * 0.1)
+	
+	return base_damage * final_multiplier
 
 func take_damage(damage: float) -> void:
 	if is_dead:
 		return
-	hp -= damage
+		
+	var final_damage = damage
+	if is_block_broken:
+		final_damage *= 1.5
+	elif is_blocking:
+		stamina -= BLOCK_STAMINA_DRAIN
+		if stamina <= 0:
+			stamina = 0
+			is_block_broken = true
+			is_blocking = false
+			block_broken_timer = 2.0
+		final_damage *= 0.5
+		
+	hp -= final_damage
 	hp = maxf(hp, 0.0)
 	hit_timer = HIT_FLASH_DURATION
-	player_hit.emit(damage)
+	player_hit.emit(final_damage)
 	if hp <= 0:
 		is_dead = true
 		player_dead.emit()
 
 func _handle_hit_flash(delta: float) -> void:
+	var base_color = Color(1, 1, 1)
+	if is_block_broken:
+		base_color = Color(1, 0.3, 0.3)
+	elif is_blocking:
+		base_color = Color(0.6, 0.6, 1.0)
+		
 	if hit_timer > 0:
 		hit_timer -= delta
 		if fmod(hit_timer, 0.1) > 0.05:
 			sprite.modulate = Color(10, 10, 10)
 		else:
-			sprite.modulate = Color(1, 1, 1)
+			sprite.modulate = base_color
 	else:
-		sprite.modulate = Color(1, 1, 1)
+		sprite.modulate = base_color
 
 # ── Helper ──────────────────────────────────────────────────────
 func _fr(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:

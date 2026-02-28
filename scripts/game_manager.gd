@@ -45,6 +45,13 @@ func _ready() -> void:
 	enemy.enemy_hit.connect(_on_enemy_hit)
 	enemy.enemy_dead.connect(_on_enemy_dead)
 	enemy.enemy_super_activated.connect(_on_enemy_super_activated)
+	
+	# QTE Signals
+	player.qte_started.connect(_on_qte_started)
+	player.qte_progress.connect(_on_qte_progress)
+	player.qte_mistake.connect(_on_qte_mistake)
+	player.qte_ended.connect(_on_qte_ended)
+	player.qte_missed.connect(_on_qte_missed)
 
 func _process(_delta: float) -> void:
 	if state == GameState.FIGHTING:
@@ -60,6 +67,7 @@ func _update_hud() -> void:
 	hud.update_player_stamina(player.stamina)
 	hud.update_player_power(player.power)
 	hud.update_enemy_hp(enemy.hp)
+	hud.update_enemy_stamina(enemy.stamina)
 	hud.update_enemy_power(enemy.power)
 
 func _check_power_pulse() -> void:
@@ -79,12 +87,16 @@ func _check_player_hits_enemy() -> void:
 		return
 
 	# Compute positions
-	var player_punch_pos: Vector2 = player.global_position + Vector2(0, -40)
+	var player_punch_pos: Vector2 = player.global_position + Vector2(0, -45)
 	var enemy_body_pos: Vector2 = enemy.global_position
 
 	# Distance check
 	var dist: float = player_punch_pos.distance_to(enemy_body_pos)
-	if dist < 60.0:
+	if dist < 85.0:
+		if player.current_attack_type == "special_startup":
+			player.start_qte()
+			return
+			
 		var dmg: float = player.get_current_damage()
 		var particle_type: String = "special" if player.is_special else "normal"
 
@@ -106,17 +118,19 @@ func _check_player_hits_enemy() -> void:
 		player.punch_collision.disabled = true
 
 func _check_enemy_hits_player() -> void:
+	if player.is_in_qte:
+		return
 	if not enemy.is_attacking:
 		return
 	if enemy.punch_collision.disabled:
 		return
 
 	# Compute positions
-	var enemy_punch_pos: Vector2 = enemy.global_position + Vector2(0, 50)
+	var enemy_punch_pos: Vector2 = enemy.global_position + Vector2(0, 65)
 	var player_body_pos: Vector2 = player.global_position
 
 	var dist: float = enemy_punch_pos.distance_to(player_body_pos)
-	if dist < 70.0:
+	if dist < 90.0:
 		var dmg: float = enemy.get_current_damage()
 		var particle_type: String = "super" if enemy.is_super_attacking else "normal"
 
@@ -152,3 +166,22 @@ func _on_enemy_dead() -> void:
 
 func _on_enemy_super_activated() -> void:
 	enemy_ai.activate_super()
+
+func _on_qte_started(sequence: Array[String], time_limit: float) -> void:
+	enemy_ai.set_qte_slowdown(true)
+	hud.start_qte(sequence, time_limit)
+
+func _on_qte_progress(current_index: int, sequence_size: int) -> void:
+	hud.update_qte_progress(current_index)
+
+func _on_qte_mistake(multiplier: float) -> void:
+	hud.show_qte_mistake()
+	screen_effects.shake(2.0, 0.1)
+
+func _on_qte_ended() -> void:
+	enemy_ai.set_qte_slowdown(false)
+	hud.end_qte()
+
+func _on_qte_missed() -> void:
+	hud.show_miss_text()
+	screen_effects.shake(2.0, 0.1)

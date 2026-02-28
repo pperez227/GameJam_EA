@@ -11,6 +11,8 @@ const NORMAL_DAMAGE: float = 14.0
 const SUPER_DAMAGE: float = 18.0
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
+const STAMINA_REGEN: float = 0.12
+const BLOCK_STAMINA_DRAIN: float = 0.25
 
 const MIN_X: float = 80.0
 const MAX_X: float = 720.0
@@ -19,6 +21,7 @@ const MAX_Y: float = 300.0
 
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP
+var stamina: float = 1.0
 var power: float = 0.0
 var hit_timer: float = 0.0
 var is_dead: bool = false
@@ -26,19 +29,44 @@ var is_attacking: bool = false
 var is_super_attacking: bool = false
 var attack_active_timer: float = 0.0
 
+var is_blocking: bool = false
+var is_block_broken: bool = false
+var block_broken_timer: float = 0.0
+
 # ── Node references ─────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite
 @onready var punch_area: Area2D = $PunchArea
 @onready var punch_collision: CollisionShape2D = $PunchArea/PunchCollision
 
-# ── Ready ────────────────────────────────────────────────────────
+var tex_idle: Texture2D
+var tex_punch: Texture2D
+
 func _ready() -> void:
-	_build_placeholder_sprite()
+	var img_idle = Image.new()
+	if img_idle.load("res://sprites/Enemy.png") == OK:
+		tex_idle = ImageTexture.create_from_image(img_idle)
+		
+	var img_punch = Image.new()
+	if img_punch.load("res://sprites/Enemy-punch.png") == OK:
+		tex_punch = ImageTexture.create_from_image(img_punch)
+
+	if tex_idle != null:
+		sprite.texture = tex_idle
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		
+		# Scale based on typical pixel frame height (approx 120 height)
+		var s = tex_idle.get_size()
+		if s.y > 0:
+			var scale_factor = 120.0 / s.y
+			sprite.scale = Vector2(scale_factor, scale_factor)
+	else:
+		_build_placeholder_sprite()
+		
 	_build_shadow()
 	punch_collision.disabled = true
 	position = Vector2(400, 200)
 
-# ── Pixel art enemy sprite (big opponent, front view) ───────────
+# ── Pixel art enemy sprite (fallback) ───────────
 func _build_placeholder_sprite() -> void:
 	var w: int = 50
 	var h: int = 70
@@ -140,9 +168,23 @@ func _process(delta: float) -> void:
 	if is_dead:
 		return
 	_handle_attack_timer(delta)
+	_handle_stamina(delta)
+	_handle_block_broken_timer(delta)
 	_handle_hit_flash(delta)
 	position.x = clampf(position.x, MIN_X, MAX_X)
 	position.y = clampf(position.y, MIN_Y, MAX_Y)
+
+func _handle_stamina(delta: float) -> void:
+	if not is_blocking and not is_block_broken:
+		stamina = clampf(stamina + STAMINA_REGEN * delta, 0.0, 1.0)
+		if stamina >= 1.0 and hp > 0 and hp < MAX_HP:
+			hp = minf(hp + 5.0 * delta, MAX_HP)
+
+func _handle_block_broken_timer(delta: float) -> void:
+	if is_block_broken:
+		block_broken_timer -= delta
+		if block_broken_timer <= 0:
+			is_block_broken = false
 
 func _handle_attack_timer(delta: float) -> void:
 	if attack_active_timer > 0:
@@ -155,11 +197,23 @@ func start_attack(is_super: bool = false) -> void:
 	is_super_attacking = is_super
 	attack_active_timer = 0.15
 	punch_collision.disabled = false
+	if tex_punch != null:
+		sprite.texture = tex_punch
+
+func cancel_attack() -> void:
+	is_attacking = false
+	is_super_attacking = false
+	attack_active_timer = 0.0
+	punch_collision.set_deferred("disabled", true)
+	if tex_idle != null:
+		sprite.texture = tex_idle
 
 func _end_attack() -> void:
 	is_attacking = false
 	is_super_attacking = false
 	punch_collision.disabled = true
+	if tex_idle != null:
+		sprite.texture = tex_idle
 
 func get_current_damage() -> float:
 	if is_super_attacking:
@@ -175,10 +229,23 @@ func on_punch_connected() -> void:
 func take_damage(damage: float) -> void:
 	if is_dead:
 		return
-	hp -= damage
+		
+	var final_damage = damage
+	if is_block_broken:
+		final_damage *= 1.5
+	elif is_blocking:
+		stamina -= BLOCK_STAMINA_DRAIN
+		if stamina <= 0:
+			stamina = 0
+			is_block_broken = true
+			is_blocking = false
+			block_broken_timer = 2.0
+		final_damage *= 0.5
+		
+	hp -= final_damage
 	hp = maxf(hp, 0.0)
 	hit_timer = HIT_FLASH_DURATION
-	enemy_hit.emit(damage)
+	enemy_hit.emit(final_damage)
 	if hp <= 0:
 		is_dead = true
 		enemy_dead.emit()
@@ -187,14 +254,20 @@ func apply_stagger(direction: Vector2, strength: float = 30.0) -> void:
 	position += direction.normalized() * strength
 
 func _handle_hit_flash(delta: float) -> void:
+	var base_color = Color(1, 1, 1)
+	if is_block_broken:
+		base_color = Color(1, 0.3, 0.3)
+	elif is_blocking:
+		base_color = Color(0.6, 0.6, 1.0)
+		
 	if hit_timer > 0:
 		hit_timer -= delta
 		if fmod(hit_timer, 0.1) > 0.05:
 			sprite.modulate = Color(10, 10, 10)
 		else:
-			sprite.modulate = Color(1, 1, 1)
+			sprite.modulate = base_color
 	else:
-		sprite.modulate = Color(1, 1, 1)
+		sprite.modulate = base_color
 
 func _fr(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 	for px: int in range(maxi(x, 0), mini(x + w, img.get_width())):
