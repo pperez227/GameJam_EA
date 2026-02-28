@@ -597,7 +597,7 @@ func _build_victory_screen() -> void:
 	score_lbl.name = "ScoreLabel"
 	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_lbl.add_theme_font_size_override("font_size", 24)
-	score_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
+	score_lbl.add_theme_color_override("font_color", Color8(200, 200, 200))
 	vbox.add_child(score_lbl)
 	victory_score_label = score_lbl
 
@@ -688,7 +688,7 @@ func _build_pause_menu() -> void:
 	title.text = "PAUSA"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 36)
-	title.add_theme_color_override("font_color", Color("1a3a8a"))
+	title.add_theme_color_override("font_color", Color8(255, 255, 255))
 	vbox.add_child(title)
 
 	# Resume button
