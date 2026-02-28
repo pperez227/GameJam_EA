@@ -507,6 +507,9 @@ func _on_tongue_hit() -> void:
 		return
 	var dist: float = player.position.distance_to(enemy.position)
 	if dist <= player.TONGUE_RANGE:
+		# Point tongue at actual enemy position for visual
+		var to_enemy: Vector2 = enemy.position - player.position
+		player.tongue_line.set_point_position(1, to_enemy)
 		# Pull enemy to 70px from player
 		var pull_dir: Vector2 = (player.position - enemy.position).normalized()
 		var target_pos: Vector2 = player.position - pull_dir * 70.0
@@ -514,6 +517,8 @@ func _on_tongue_hit() -> void:
 		enemy._clamp_to_ring()
 		enemy.apply_stun(1.0)
 		enemy_ai.set_cooldown(1.0)
+		# Visual feedback
+		player.show_tongue_hit()
 		screen_effects.shake(4.0, 0.2)
 
 func _on_qte_started(sequence: Array[String], time_limit: float) -> void:
@@ -653,7 +658,14 @@ func _show_match_result() -> void:
 	# Screen shake
 	screen_effects.shake(10.0, 0.5)
 
-	var won: bool = player_wins > enemy_wins
+	# Determine winner: 3-KO win takes priority, then round wins, then HP
+	var won: bool
+	if enemy_knockdowns_total >= KO_WIN_COUNT:
+		won = true  # Player knocked enemy 3 times
+	elif player_knockdowns_total >= KO_WIN_COUNT:
+		won = false  # Enemy knocked player 3 times
+	else:
+		won = player_wins > enemy_wins
 	victory_panel.visible = true
 
 	if won:

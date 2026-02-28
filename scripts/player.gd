@@ -79,6 +79,7 @@ var dash_direction: Vector2 = Vector2.ZERO
 var tongue_cooldown_timer: float = 0.0
 var is_tongue_active: bool = false
 var tongue_timer: float = 0.0
+var tongue_retract_timer: float = 0.0
 var tongue_line: Line2D
 
 var is_blocking: bool = false
@@ -238,6 +239,13 @@ func _start_tongue() -> void:
 func _handle_tongue(delta: float) -> void:
 	if tongue_cooldown_timer > 0 and not is_tongue_active:
 		tongue_cooldown_timer -= delta
+	# Handle retract visual (tongue stays visible briefly after hit)
+	if tongue_retract_timer > 0:
+		tongue_retract_timer -= delta
+		if tongue_retract_timer <= 0:
+			tongue_line.visible = false
+			tongue_line.default_color = Color8(255, 100, 150)  # Reset to pink
+			tongue_line.width = 4.0
 	if not is_tongue_active:
 		return
 	tongue_timer -= delta
@@ -247,9 +255,16 @@ func _handle_tongue(delta: float) -> void:
 	tongue_line.set_point_position(1, end_pos)
 	if tongue_timer <= 0:
 		tongue_hit.emit()
-		# Start retract (instant)
 		is_tongue_active = false
+		# Hide immediately on miss (game_manager will call show_tongue_hit on connect)
 		tongue_line.visible = false
+
+func show_tongue_hit() -> void:
+	# Keep tongue visible briefly with bright green to show successful grab
+	tongue_line.visible = true
+	tongue_line.default_color = Color8(100, 255, 100)
+	tongue_line.width = 6.0
+	tongue_retract_timer = 0.3
 
 # ── Process ──────────────────────────────────────────────────────
 func _process(delta: float) -> void:
@@ -567,7 +582,10 @@ func reset_for_round() -> void:
 	tongue_cooldown_timer = 0.0
 	is_tongue_active = false
 	tongue_timer = 0.0
+	tongue_retract_timer = 0.0
 	if tongue_line:
 		tongue_line.visible = false
+		tongue_line.default_color = Color8(255, 100, 150)
+		tongue_line.width = 4.0
 	attack_direction = Vector2(0, -1)
 	position = Vector2(400, 400)
