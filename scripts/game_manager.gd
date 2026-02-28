@@ -313,6 +313,7 @@ func _process_knockdown(delta: float) -> void:
 				knockdown_mash_count += 1
 				knockdown_last_key = "D"
 		
+		hud.update_knockdown_progress(float(knockdown_mash_count) / float(KNOCKDOWN_MASH_NEEDED))
 		if knockdown_mash_count >= KNOCKDOWN_MASH_NEEDED:
 			_recover_from_knockdown("player")
 			return
@@ -544,8 +545,8 @@ func _on_enemy_attack_launched(is_super: bool) -> void:
 
 # ── Audio helpers ───────────────────────────────────────────────
 func _play_sfx_safe(sfx: AudioStreamPlayer) -> void:
-	if not sfx.playing:
-		sfx.play()
+	sfx.stop()
+	sfx.play()
 
 func _load_sfx(node_name: String, path: String) -> AudioStreamPlayer:
 	var player_node = AudioStreamPlayer.new()
@@ -596,7 +597,7 @@ func _build_victory_screen() -> void:
 	score_lbl.name = "ScoreLabel"
 	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_lbl.add_theme_font_size_override("font_size", 24)
-	score_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	score_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	vbox.add_child(score_lbl)
 	victory_score_label = score_lbl
 
@@ -687,7 +688,7 @@ func _build_pause_menu() -> void:
 	title.text = "PAUSA"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 36)
-	title.add_theme_color_override("font_color", Color.WHITE)
+	title.add_theme_color_override("font_color", Color("1a3a8a"))
 	vbox.add_child(title)
 
 	# Resume button

@@ -41,6 +41,8 @@ var round_label: Label
 var timer_label: Label
 var score_label: Label
 var knockdown_label: Label
+var knockdown_progress_bg: ColorRect
+var knockdown_progress_fill: ColorRect
 var combo_label: Label
 var transition_label: Label
 
@@ -65,7 +67,7 @@ func _build_enemy_hud() -> void:
 	lbl.text = "ENEMIGO"
 	lbl.position = Vector2(base_x, 6)
 	lbl.add_theme_font_size_override("font_size", 14)
-	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(lbl)
 
 	# HP bar with border
@@ -80,7 +82,7 @@ func _build_enemy_hud() -> void:
 	hp_lbl.text = "HP"
 	hp_lbl.position = Vector2(base_x + 2, hp_y - 1)
 	hp_lbl.add_theme_font_size_override("font_size", 11)
-	hp_lbl.add_theme_color_override("font_color", Color.WHITE)
+	hp_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(hp_lbl)
 
 	# Stamina bar (blue) with border
@@ -95,7 +97,7 @@ func _build_enemy_hud() -> void:
 	stm_lbl.text = "STM"
 	stm_lbl.position = Vector2(base_x + 2, stm_y - 1)
 	stm_lbl.add_theme_font_size_override("font_size", 11)
-	stm_lbl.add_theme_color_override("font_color", Color.WHITE)
+	stm_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(stm_lbl)
 
 	# Power bar (purple) with border
@@ -125,7 +127,7 @@ func _build_player_hud() -> void:
 	title_lbl.text = "JUGADOR"
 	title_lbl.position = Vector2(base_x, 6)
 	title_lbl.add_theme_font_size_override("font_size", 14)
-	title_lbl.add_theme_color_override("font_color", Color.WHITE)
+	title_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(title_lbl)
 
 	# HP bar
@@ -140,7 +142,7 @@ func _build_player_hud() -> void:
 	hp_lbl.text = "HP"
 	hp_lbl.position = Vector2(base_x + 2, hp_y - 1)
 	hp_lbl.add_theme_font_size_override("font_size", 11)
-	hp_lbl.add_theme_color_override("font_color", Color.WHITE)
+	hp_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(hp_lbl)
 
 	# Stamina bar (blue)
@@ -155,7 +157,7 @@ func _build_player_hud() -> void:
 	stm_lbl.text = "STM"
 	stm_lbl.position = Vector2(base_x + 2, stm_y - 1)
 	stm_lbl.add_theme_font_size_override("font_size", 11)
-	stm_lbl.add_theme_color_override("font_color", Color.WHITE)
+	stm_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(stm_lbl)
 
 	# Power bar (yellow/orange)
@@ -170,7 +172,7 @@ func _build_player_hud() -> void:
 	pwr_lbl.text = "PWR"
 	pwr_lbl.position = Vector2(base_x + 2, pwr_y - 1)
 	pwr_lbl.add_theme_font_size_override("font_size", 11)
-	pwr_lbl.add_theme_color_override("font_color", Color.WHITE)
+	pwr_lbl.add_theme_color_override("font_color", Color("1a3a8a"))
 	container.add_child(pwr_lbl)
 
 # ── Hint label (bottom-center) ──────────────────────────────────
@@ -375,7 +377,7 @@ func _build_round_hud() -> void:
 	round_label.size = Vector2(800, 30)
 	round_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	round_label.add_theme_font_size_override("font_size", 16)
-	round_label.add_theme_color_override("font_color", Color.WHITE)
+	round_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	add_child(round_label)
 
 	# Timer (top center, below round)
@@ -385,7 +387,7 @@ func _build_round_hud() -> void:
 	timer_label.size = Vector2(800, 30)
 	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	timer_label.add_theme_font_size_override("font_size", 22)
-	timer_label.add_theme_color_override("font_color", Color.WHITE)
+	timer_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	add_child(timer_label)
 
 	# Score (top center, below timer)
@@ -395,7 +397,7 @@ func _build_round_hud() -> void:
 	score_label.size = Vector2(800, 30)
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_label.add_theme_font_size_override("font_size", 14)
-	score_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
+	score_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	add_child(score_label)
 
 
@@ -406,9 +408,22 @@ func _build_round_hud() -> void:
 	knockdown_label.size = Vector2(800, 110)
 	knockdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	knockdown_label.add_theme_font_size_override("font_size", 36)
-	knockdown_label.add_theme_color_override("font_color", Color.WHITE)
+	knockdown_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	knockdown_label.visible = false
 	add_child(knockdown_label)
+
+	# Knockdown mash progress bar (below knockdown text)
+	var kd_bar_width: float = 200.0
+	var kd_bar_height: float = 14.0
+	var kd_bar_x: float = 300.0
+	var kd_bar_y: float = 295.0
+	_add_border(self, kd_bar_x, kd_bar_y, kd_bar_width, kd_bar_height)
+	knockdown_progress_bg = _make_bar(kd_bar_x, kd_bar_y, kd_bar_width, kd_bar_height, Color8(30, 30, 30))
+	add_child(knockdown_progress_bg)
+	knockdown_progress_fill = _make_bar(kd_bar_x, kd_bar_y, 0, kd_bar_height, Color8(60, 200, 60))
+	add_child(knockdown_progress_fill)
+	knockdown_progress_bg.visible = false
+	knockdown_progress_fill.visible = false
 
 	# Combo counter (right side, hidden)
 	combo_label = Label.new()
@@ -428,7 +443,7 @@ func _build_round_hud() -> void:
 	transition_label.size = Vector2(800, 100)
 	transition_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	transition_label.add_theme_font_size_override("font_size", 40)
-	transition_label.add_theme_color_override("font_color", Color.WHITE)
+	transition_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	transition_label.visible = false
 	add_child(transition_label)
 
@@ -443,21 +458,30 @@ func update_timer(seconds: float) -> void:
 	if seconds <= 10.0:
 		timer_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
 	else:
-		timer_label.add_theme_color_override("font_color", Color.WHITE)
+		timer_label.add_theme_color_override("font_color", Color("1a3a8a"))
 
 func update_score(p_wins: int, e_wins: int) -> void:
 	score_label.text = str(p_wins) + " - " + str(e_wins)
 
 func show_knockdown(count: int, is_player: bool) -> void:
 	knockdown_label.visible = true
-	knockdown_label.add_theme_color_override("font_color", Color.WHITE)
+	knockdown_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	if is_player:
 		knockdown_label.text = str(count) + "\n\u00a1Presiona A y D para levantarte!"
+		knockdown_progress_bg.visible = true
+		knockdown_progress_fill.visible = true
 	else:
 		knockdown_label.text = "KNOCKDOWN\n" + str(count)
+		knockdown_progress_bg.visible = false
+		knockdown_progress_fill.visible = false
 
 func hide_knockdown() -> void:
 	knockdown_label.visible = false
+	knockdown_progress_bg.visible = false
+	knockdown_progress_fill.visible = false
+
+func update_knockdown_progress(ratio: float) -> void:
+	knockdown_progress_fill.size.x = 200.0 * clampf(ratio, 0.0, 1.0)
 
 func update_combo(count: int) -> void:
 	if count >= 2:

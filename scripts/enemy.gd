@@ -199,7 +199,9 @@ func _handle_attack_timer(delta: float) -> void:
 			_end_attack()
 
 func start_attack(is_super: bool = false) -> void:
-	if not is_super:
+	if is_super:
+		stamina -= SUPER_ATTACK_STAMINA_COST
+	else:
 		stamina -= NORMAL_ATTACK_STAMINA_COST
 	stamina = maxf(stamina, 0.0)
 	is_attacking = true
