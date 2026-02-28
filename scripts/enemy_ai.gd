@@ -13,16 +13,16 @@ const CIRCLE_SPEED: float = 120.0
 const BLOCK_RETREAT_SPEED: float = 50.0
 const SUPER_SPEED: float = 320.0
 
-const IDEAL_FIGHT_DISTANCE: float = 75.0
+const IDEAL_FIGHT_DISTANCE: float = 90.0
 const ATTACK_RANGE: float = 105.0
-const CLOSE_RANGE: float = 50.0
+const CLOSE_RANGE: float = 70.0
 const FAR_RANGE: float = 160.0
 
 const COMBO_COOLDOWN: float = 0.18        # Between hits in a combo
 const BETWEEN_COMBO_COOLDOWN: float = 0.5  # After a combo ends
 const MAX_COMBO_HITS: int = 3
 
-const SUPER_WARNING_TIME: float = 0.6
+const SUPER_WARNING_TIME: float = 0.3
 const SUPER_DURATION: float = 1.2
 const SUPER_HIT_INTERVAL: float = 0.25
 
@@ -116,6 +116,13 @@ func _process(delta: float) -> void:
 			_state_attack(effective_delta)
 		State.BLOCK:
 			_state_block(effective_delta)
+
+	# Separation force — never overlap the player
+	var sep_dist: float = enemy.position.distance_to(player.position)
+	if sep_dist < 60.0 and sep_dist > 0:
+		var push_dir: Vector2 = (enemy.position - player.position).normalized()
+		enemy.position += push_dir * (60.0 - sep_dist)
+		enemy._clamp_to_ring()
 
 	# Transition check
 	if phase_timer <= 0:
@@ -266,7 +273,7 @@ func _handle_super_active(delta: float) -> void:
 	enemy._clamp_to_ring()
 
 	# Hit every SUPER_HIT_INTERVAL
-	if super_hit_timer <= 0 and enemy.stamina >= enemy.SUPER_ATTACK_STAMINA_COST:
+	if super_hit_timer <= 0:
 		enemy.start_attack(true)
 		super_hit_timer = SUPER_HIT_INTERVAL
 
