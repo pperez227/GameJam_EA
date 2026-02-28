@@ -178,11 +178,12 @@ func _process(delta: float) -> void:
 			if round_timer <= 0:
 				_end_round_by_time()
 			# Super aura pulse
-			if enemy.power >= 1.0:
-				var pulse = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-				enemy.sprite.modulate = Color(0.7 + 0.3 * pulse, 0.3, 0.8 + 0.2 * pulse)
-			else:
-				enemy.sprite.modulate = Color(1, 1, 1)
+			if not enemy.is_dead:
+				if enemy.power >= 1.0:
+					var pulse = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
+					enemy.sprite.modulate = Color(0.7 + 0.3 * pulse, 0.3, 0.8 + 0.2 * pulse)
+				else:
+					enemy.sprite.modulate = Color(1, 1, 1)
 			# Combo timer
 			if hit_combo_timer > 0:
 				hit_combo_timer -= delta
@@ -280,7 +281,9 @@ func _on_player_knocked_down() -> void:
 	knockdown_last_key = ""
 	player.is_dead = true  # Freeze
 	player.sprite.rotation = deg_to_rad(90)  # Fallen visual
+	player.sprite.modulate = Color(1, 1, 1)
 	enemy.is_dead = true  # Enemy waits
+	enemy.sprite.modulate = Color(1, 1, 1)
 
 func _on_enemy_knocked_down() -> void:
 	if state != GameState.FIGHTING:
@@ -295,7 +298,9 @@ func _on_enemy_knocked_down() -> void:
 	knockdown_decided = false
 	enemy.is_dead = true
 	enemy.sprite.rotation = deg_to_rad(-90)  # Fallen visual
+	enemy.sprite.modulate = Color(1, 1, 1)
 	player.is_dead = true  # Player waits
+	player.sprite.modulate = Color(1, 1, 1)
 
 func _process_knockdown(delta: float) -> void:
 	knockdown_timer -= delta
