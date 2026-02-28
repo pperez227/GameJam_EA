@@ -9,7 +9,7 @@ func _ready() -> void:
 	music_player.volume_db = -10.0
 	
 	# Load the stream and enable loop
-	var stream = load("res://assets/music/musica.mpeg")
+	var stream = load("res://assets/music/musica.ogg")
 	if stream != null:
 		if stream is AudioStreamMP3 or stream is AudioStreamOggVorbis:
 			stream.loop = true
@@ -19,4 +19,4 @@ func _ready() -> void:
 		music_player.stream = stream
 		music_player.play()
 	else:
-		push_warning("MusicManager: failed to load res://assets/music/musica.mpeg")
+		push_warning("MusicManager: failed to load res://assets/music/musica.ogg")
