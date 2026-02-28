@@ -11,7 +11,7 @@ const DASH_SPEED: float = 280.0
 const ATTACK_ADVANCE_SPEED: float = 200.0
 const CIRCLE_SPEED: float = 120.0
 const BLOCK_RETREAT_SPEED: float = 50.0
-const SUPER_SPEED: float = 320.0
+const SUPER_SPEED: float = 260.0
 
 const IDEAL_FIGHT_DISTANCE: float = 90.0
 const ATTACK_RANGE: float = 105.0
@@ -28,7 +28,7 @@ var base_aggression: float = 0.55
 
 const SUPER_WARNING_TIME: float = 0.3
 const SUPER_DURATION: float = 1.2
-const SUPER_HIT_INTERVAL: float = 0.25
+const SUPER_HIT_INTERVAL: float = 0.35
 
 # ── State ────────────────────────────────────────────────────────
 var current_state: State = State.APPROACH
@@ -68,20 +68,20 @@ func _ready() -> void:
 	# Apply difficulty settings
 	var diff: int = GameSettings.difficulty
 	if diff == 0:  # Normal
-		between_combo_cooldown = 1.0
-		max_combo_hits = 2
-		diff_block_chance = 0.20
-		base_aggression = 0.28
+		between_combo_cooldown = 1.4
+		max_combo_hits = 1
+		diff_block_chance = 0.10
+		base_aggression = 0.18
 	elif diff == 2:  # Extremo
 		between_combo_cooldown = 0.50
 		max_combo_hits = 3
 		diff_block_chance = 0.35
 		base_aggression = 0.43
 	else:  # Difícil
-		between_combo_cooldown = 0.70
+		between_combo_cooldown = 0.85
 		max_combo_hits = 2
-		diff_block_chance = 0.28
-		base_aggression = 0.35
+		diff_block_chance = 0.22
+		base_aggression = 0.30
 
 func set_player_reference(p: CharacterBody2D) -> void:
 	player = p

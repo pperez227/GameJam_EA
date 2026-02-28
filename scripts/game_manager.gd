@@ -322,10 +322,10 @@ func _process_knockdown(delta: float) -> void:
 		# Enemy auto-decides once whether to get up
 		if not knockdown_decided and knockdown_timer < 7.0:
 			knockdown_decided = true
-			var recover_chance: float = 0.30  # Normal
+			var recover_chance: float = 0.15  # Normal
 			var diff = GameSettings.difficulty
 			if diff == 1:  # Difícil
-				recover_chance = 0.50
+				recover_chance = 0.40
 			elif diff == 2:  # Extremo
 				recover_chance = 0.80
 			if randf() < recover_chance:

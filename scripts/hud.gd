@@ -409,7 +409,7 @@ func _build_round_hud() -> void:
 	knockdown_label.size = Vector2(800, 110)
 	knockdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	knockdown_label.add_theme_font_size_override("font_size", 36)
-	knockdown_label.add_theme_color_override("font_color", Color8(255, 255, 255))
+	knockdown_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	knockdown_label.visible = false
 	add_child(knockdown_label)
 
@@ -472,7 +472,7 @@ func update_score(p_wins: int, e_wins: int) -> void:
 
 func show_knockdown(count: int, is_player: bool) -> void:
 	knockdown_label.visible = true
-	knockdown_label.add_theme_color_override("font_color", Color8(255, 255, 255))
+	knockdown_label.add_theme_color_override("font_color", Color("1a3a8a"))
 	if is_player:
 		knockdown_label.text = str(count) + "\n\u00a1Presiona A y D para levantarte!"
 		knockdown_progress_border.visible = true

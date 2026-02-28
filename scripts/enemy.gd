@@ -9,8 +9,8 @@ signal enemy_attack_launched(is_super: bool)
 
 # ── Constants ────────────────────────────────────────────────────
 const MAX_HP: float = 100.0
-const NORMAL_DAMAGE: float = 12.0
-const SUPER_DAMAGE: float = 22.0
+const NORMAL_DAMAGE: float = 8.0
+const SUPER_DAMAGE: float = 15.0
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
 const STAMINA_REGEN: float = 0.12

@@ -292,6 +292,13 @@ func _handle_movement(delta: float) -> void:
 	var dyn_max_x: float = lerpf(TOP_RIGHT_X, BOT_RIGHT_X, t)
 	position.x = clampf(position.x, dyn_min_x, dyn_max_x)
 
+func _clamp_to_ring() -> void:
+	position.y = clampf(position.y, MIN_Y, MAX_Y)
+	var t: float = (position.y - MIN_Y) / (MAX_Y - MIN_Y)
+	var dyn_min_x: float = lerpf(TOP_LEFT_X, BOT_LEFT_X, t)
+	var dyn_max_x: float = lerpf(TOP_RIGHT_X, BOT_RIGHT_X, t)
+	position.x = clampf(position.x, dyn_min_x, dyn_max_x)
+
 func _handle_stamina(delta: float) -> void:
 	if not is_blocking and not is_block_broken:
 		stamina = clampf(stamina + STAMINA_REGEN * delta, 0.0, 1.0)
