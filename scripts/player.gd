@@ -26,9 +26,9 @@ const HARD_ATTACK_STAMINA_COST: float = 0.30
 const BLOCK_STAMINA_DRAIN: float = 0.25
 const ATTACK_COOLDOWN: float = 0.18
 const ATTACK_DURATION: float = 0.15
-const SOFT_ATTACK_DAMAGE: float = 10.0
-const HARD_ATTACK_DAMAGE: float = 25.0
-const SPECIAL_DAMAGE: float = 40.0
+const SOFT_ATTACK_DAMAGE: float = 8.0
+const HARD_ATTACK_DAMAGE: float = 18.0
+const SPECIAL_DAMAGE: float = 35.0
 const SPECIAL_COOLDOWN: float = 0.3
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
@@ -41,11 +41,11 @@ const QTE_TIMEOUT_PENALTY: float = 0.10
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP
 var stamina: float = 1.0
-var power: float = 1.0
+var power: float = 0.0
 var attack_cooldown_timer: float = 0.0
 var attack_active_timer: float = 0.0
 var is_attacking: bool = false
-var is_special: bool = true
+var is_special: bool = false
 var current_attack_type: String = ""
 var hit_timer: float = 0.0
 var is_dead: bool = false
@@ -62,13 +62,14 @@ var qte_current_index: int = 0
 var qte_timer: float = 0.0
 var qte_damage_multiplier: float = 1.0
 
-# QTE Key Mapping
+# QTE Key Mapping — home row ASDFGHJKL
 const QTE_ACTIONS = {
-	"move_up": "W", "move_down": "S", "move_left": "A", "move_right": "D",
+	"move_left": "A", "move_down": "S", "move_right": "D",
+	"qte_f": "F", "qte_g": "G", "qte_h": "H",
 	"soft_attack": "J", "hard_attack": "K", "special": "L"
 }
-var qte_keys = ["W", "A", "S", "D", "J", "K", "L"]
-var qte_action_names = ["move_up", "move_down", "move_left", "move_right", "soft_attack", "hard_attack", "special"]
+var qte_keys = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
+var qte_action_names = ["move_left", "move_down", "move_right", "qte_f", "qte_g", "qte_h", "soft_attack", "hard_attack", "special"]
 
 # ── Node references ─────────────────────────────────────────────
 @onready var sprite: Sprite2D = $Sprite
@@ -91,16 +92,19 @@ func _ready() -> void:
 	if tex_idle != null:
 		sprite.texture = tex_idle
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var s = tex_idle.get_size()
-		if s.y > 0:
-			var scale_factor = 90.0 / s.y
-			sprite.scale = Vector2(scale_factor, scale_factor)
+		_apply_sprite_scale(tex_idle)
 	else:
 		_build_placeholder_sprite()
-		
+
 	_build_shadow()
 	punch_collision.disabled = true
 	position = Vector2(400, 400)
+
+func _apply_sprite_scale(tex: Texture2D) -> void:
+	var s = tex.get_size()
+	if s.y > 0:
+		var scale_factor = 90.0 / s.y
+		sprite.scale = Vector2(scale_factor, scale_factor)
 
 # ── Pixel art player sprite (Little Mac style, from behind) ─────
 func _build_placeholder_sprite() -> void:
@@ -298,6 +302,7 @@ func _start_attack(type: String, cost: float) -> void:
 	punch_collision.disabled = false
 	if tex_punch != null:
 		sprite.texture = tex_punch
+		_apply_sprite_scale(tex_punch)
 
 func _attempt_special() -> void:
 	power = 0.0 # Consume power
@@ -309,6 +314,7 @@ func _attempt_special() -> void:
 	punch_collision.disabled = false
 	if tex_punch != null:
 		sprite.texture = tex_punch
+		_apply_sprite_scale(tex_punch)
 
 func start_qte() -> void:
 	is_in_qte = true
@@ -344,6 +350,7 @@ func _end_attack() -> void:
 	punch_collision.disabled = true
 	if tex_idle != null:
 		sprite.texture = tex_idle
+		_apply_sprite_scale(tex_idle)
 
 func on_punch_connected() -> void:
 	if current_attack_type != "special_execute" and current_attack_type != "special_startup":

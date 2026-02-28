@@ -23,6 +23,9 @@ var screen_effects: Node
 var particle_manager: Node
 var camera: Camera2D
 
+var sfx_punch: AudioStreamPlayer
+var sfx_deadly: AudioStreamPlayer
+
 func _ready() -> void:
 	# Get references from sibling nodes (all already initialized)
 	player = get_parent().get_node("Player")
@@ -38,6 +41,27 @@ func _ready() -> void:
 
 	# Set camera reference for shake
 	screen_effects.set_camera(camera)
+
+	# Load hit sound effects
+	sfx_punch = AudioStreamPlayer.new()
+	sfx_punch.name = "SfxPunch"
+	var punch_stream = AudioStreamMP3.new()
+	var punch_file = FileAccess.open("res://punch.mp3", FileAccess.READ)
+	if punch_file:
+		punch_stream.data = punch_file.get_buffer(punch_file.get_length())
+		punch_file.close()
+	sfx_punch.stream = punch_stream
+	add_child(sfx_punch)
+
+	sfx_deadly = AudioStreamPlayer.new()
+	sfx_deadly.name = "SfxDeadly"
+	var deadly_stream = AudioStreamMP3.new()
+	var deadly_file = FileAccess.open("res://deadly strike.mp3", FileAccess.READ)
+	if deadly_file:
+		deadly_stream.data = deadly_file.get_buffer(deadly_file.get_length())
+		deadly_file.close()
+	sfx_deadly.stream = deadly_stream
+	add_child(sfx_deadly)
 
 	# Connect signals
 	player.player_hit.connect(_on_player_hit)
@@ -109,6 +133,12 @@ func _check_player_hits_enemy() -> void:
 		# Player gains power on connect
 		player.on_punch_connected()
 
+		# Sound effect
+		if player.current_attack_type == "soft":
+			sfx_punch.play()
+		else:
+			sfx_deadly.play()
+
 		# Effects
 		var hit_pos: Vector2 = (player_punch_pos + enemy_body_pos) / 2.0
 		particle_manager.spawn_hit_particles(hit_pos, particle_type)
@@ -139,6 +169,12 @@ func _check_enemy_hits_player() -> void:
 
 		# Enemy gains power on connect
 		enemy.on_punch_connected()
+
+		# Sound effect
+		if enemy.is_super_attacking:
+			sfx_deadly.play()
+		else:
+			sfx_punch.play()
 
 		# Effects
 		var hit_pos: Vector2 = (enemy_punch_pos + player_body_pos) / 2.0

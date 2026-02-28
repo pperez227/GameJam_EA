@@ -7,8 +7,8 @@ signal enemy_super_activated()
 
 # ── Constants ────────────────────────────────────────────────────
 const MAX_HP: float = 100.0
-const NORMAL_DAMAGE: float = 14.0
-const SUPER_DAMAGE: float = 18.0
+const NORMAL_DAMAGE: float = 12.0
+const SUPER_DAMAGE: float = 22.0
 const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
 const STAMINA_REGEN: float = 0.12
@@ -53,18 +53,19 @@ func _ready() -> void:
 	if tex_idle != null:
 		sprite.texture = tex_idle
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		
-		# Scale based on typical pixel frame height (approx 120 height)
-		var s = tex_idle.get_size()
-		if s.y > 0:
-			var scale_factor = 120.0 / s.y
-			sprite.scale = Vector2(scale_factor, scale_factor)
+		_apply_sprite_scale(tex_idle)
 	else:
 		_build_placeholder_sprite()
-		
+
 	_build_shadow()
 	punch_collision.disabled = true
 	position = Vector2(400, 200)
+
+func _apply_sprite_scale(tex: Texture2D) -> void:
+	var s = tex.get_size()
+	if s.y > 0:
+		var scale_factor = 90.0 / s.y
+		sprite.scale = Vector2(scale_factor, scale_factor)
 
 # ── Pixel art enemy sprite (fallback) ───────────
 func _build_placeholder_sprite() -> void:
@@ -199,6 +200,7 @@ func start_attack(is_super: bool = false) -> void:
 	punch_collision.disabled = false
 	if tex_punch != null:
 		sprite.texture = tex_punch
+		_apply_sprite_scale(tex_punch)
 
 func cancel_attack() -> void:
 	is_attacking = false
@@ -207,6 +209,7 @@ func cancel_attack() -> void:
 	punch_collision.set_deferred("disabled", true)
 	if tex_idle != null:
 		sprite.texture = tex_idle
+		_apply_sprite_scale(tex_idle)
 
 func _end_attack() -> void:
 	is_attacking = false
@@ -214,6 +217,7 @@ func _end_attack() -> void:
 	punch_collision.disabled = true
 	if tex_idle != null:
 		sprite.texture = tex_idle
+		_apply_sprite_scale(tex_idle)
 
 func get_current_damage() -> float:
 	if is_super_attacking:
