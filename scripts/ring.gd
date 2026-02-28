@@ -4,7 +4,7 @@ extends Node2D
 
 func _ready() -> void:
 	var img = Image.new()
-	if img.load("res://assets/images/new_ring.png") == OK:
+	if img.load("res://assets/images/ring_new.jpg") == OK:
 		var tex = ImageTexture.create_from_image(img)
 		var bg_sprite = Sprite2D.new()
 		bg_sprite.name = "RingBackground"

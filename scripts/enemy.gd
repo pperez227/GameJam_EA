@@ -48,15 +48,30 @@ var stun_timer: float = 0.0
 
 var tex_idle: Texture2D
 var tex_punch: Texture2D
+var tex_walk_frames: Array[Texture2D] = []
+var walk_frame_index: int = 0
+var walk_frame_timer: float = 0.0
+const WALK_FRAME_SPEED: float = 0.1
+var is_moving: bool = false
+var is_moving_visual: bool = false
 
 func _ready() -> void:
 	var img_idle = Image.new()
-	if img_idle.load("res://sprites/Enemy.png") == OK:
+	if img_idle.load("res://assets/images/enemigo_quieto.jpg") == OK:
 		tex_idle = ImageTexture.create_from_image(img_idle)
 		
 	var img_punch = Image.new()
-	if img_punch.load("res://sprites/Enemy-punch.png") == OK:
+	if img_punch.load("res://assets/images/golpe_enemigo.jpg") == OK:
 		tex_punch = ImageTexture.create_from_image(img_punch)
+
+	# Load walk animation frames
+	for i in range(100):
+		var frame_img = Image.new()
+		var path = "res://assets/walk_frames/enemy/frame_" + str(i) + ".png"
+		if frame_img.load(path) == OK:
+			tex_walk_frames.append(ImageTexture.create_from_image(frame_img))
+		else:
+			break
 
 	if tex_idle != null:
 		sprite.texture = tex_idle
@@ -188,6 +203,7 @@ func _process(delta: float) -> void:
 	_handle_block_broken_timer(delta)
 	_handle_hit_flash(delta)
 	_clamp_to_ring()
+	_update_walk_visual(delta)
 
 func _handle_stamina(delta: float) -> void:
 	if not is_blocking and not is_block_broken:
@@ -283,6 +299,30 @@ func apply_stun(duration: float) -> void:
 	cancel_attack()
 	is_blocking = false
 
+func set_moving(val: bool) -> void:
+	is_moving = val
+
+func _update_walk_visual(delta: float) -> void:
+	if is_attacking or is_stunned:
+		return  # Attack/stun sprite takes priority
+	if is_moving and tex_walk_frames.size() > 0:
+		if not is_moving_visual:
+			is_moving_visual = true
+			walk_frame_index = 0
+			walk_frame_timer = 0.0
+		walk_frame_timer += delta
+		if walk_frame_timer >= WALK_FRAME_SPEED:
+			walk_frame_timer -= WALK_FRAME_SPEED
+			walk_frame_index = (walk_frame_index + 1) % tex_walk_frames.size()
+		sprite.texture = tex_walk_frames[walk_frame_index]
+		_apply_sprite_scale(tex_walk_frames[walk_frame_index])
+	else:
+		if is_moving_visual:
+			is_moving_visual = false
+		if tex_idle != null:
+			sprite.texture = tex_idle
+			_apply_sprite_scale(tex_idle)
+
 func _clamp_to_ring() -> void:
 	position.y = clampf(position.y, MIN_Y, MAX_Y)
 	var t: float = (position.y - MIN_Y) / (MAX_Y - MIN_Y)
@@ -329,4 +369,8 @@ func reset_for_round() -> void:
 	punch_collision.disabled = true
 	sprite.rotation = 0
 	sprite.modulate = Color(1, 1, 1)
+	is_moving = false
+	is_moving_visual = false
+	walk_frame_index = 0
+	walk_frame_timer = 0.0
 	position = Vector2(400, 200)

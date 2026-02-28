@@ -89,27 +89,33 @@ func set_player_reference(p: CharacterBody2D) -> void:
 # ── Main loop ────────────────────────────────────────────────────
 func _process(delta: float) -> void:
 	if enemy == null or enemy.is_dead:
+		enemy.set_moving(false) if enemy != null else null
 		return
 	if player == null or player.is_dead:
+		enemy.set_moving(false)
 		return
 	
 	# Post-knockdown cooldown — AI waits
 	if ai_cooldown_timer > 0:
 		ai_cooldown_timer -= delta
+		enemy.set_moving(false)
 		return
 	
 	# Stunned — skip all AI
 	if enemy.is_stunned:
+		enemy.set_moving(false)
 		return
 
 	# Handle super warning phase
 	if super_pending:
 		_handle_super_warning(delta)
+		enemy.set_moving(false)
 		return
 
 	# Handle super active phase
 	if current_state == State.SUPER:
 		_handle_super_active(delta)
+		enemy.set_moving(true)
 		return
 
 	# ── Proactive super check ──
@@ -152,6 +158,10 @@ func _process(delta: float) -> void:
 			_state_attack(effective_delta)
 		State.BLOCK:
 			_state_block(effective_delta)
+
+	# Signal movement state for walk animation
+	var moving_states = [State.APPROACH, State.DASH, State.CIRCLE]
+	enemy.set_moving(current_state in moving_states)
 
 	# Separation force — never overlap the player
 	var sep_dist: float = enemy.position.distance_to(player.position)

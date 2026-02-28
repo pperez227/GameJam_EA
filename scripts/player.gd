@@ -110,16 +110,30 @@ var qte_action_names = ["move_left", "move_down", "move_right", "qte_f", "qte_g"
 
 var tex_idle: Texture2D
 var tex_punch: Texture2D
+var tex_walk_frames: Array[Texture2D] = []
+var walk_frame_index: int = 0
+var walk_frame_timer: float = 0.0
+const WALK_FRAME_SPEED: float = 0.1  # seconds per frame
+var is_moving_visual: bool = false
 
 # ── Ready ────────────────────────────────────────────────────────
 func _ready() -> void:
 	var img_idle = Image.new()
-	if img_idle.load("res://sprites/Player.png") == OK:
+	if img_idle.load("res://assets/images/rana_quieto.jpg") == OK:
 		tex_idle = ImageTexture.create_from_image(img_idle)
 		
 	var img_punch = Image.new()
 	if img_punch.load("res://sprites/Player-punch.png") == OK:
 		tex_punch = ImageTexture.create_from_image(img_punch)
+
+	# Load walk animation frames
+	for i in range(100):
+		var frame_img = Image.new()
+		var path = "res://assets/walk_frames/player/frame_" + str(i) + ".png"
+		if frame_img.load(path) == OK:
+			tex_walk_frames.append(ImageTexture.create_from_image(frame_img))
+		else:
+			break
 
 	if tex_idle != null:
 		sprite.texture = tex_idle
@@ -285,6 +299,7 @@ func _process(delta: float) -> void:
 		_handle_input()
 	
 	_handle_hit_flash(delta)
+	_update_walk_visual(delta)
 
 func _handle_qte_timer(delta: float) -> void:
 	qte_timer -= delta
@@ -523,6 +538,31 @@ func take_damage(damage: float) -> void:
 	player_hit.emit(final_damage)
 	if hp <= 0:
 		player_knocked_down.emit()
+
+func _update_walk_visual(delta: float) -> void:
+	if is_attacking or is_in_qte:
+		return  # Attack/QTE sprite takes priority
+	var dir_x: float = Input.get_axis("move_left", "move_right")
+	var dir_y: float = Input.get_axis("move_up", "move_down")
+	var moving: bool = abs(dir_x) > 0.1 or abs(dir_y) > 0.1
+	
+	if moving and tex_walk_frames.size() > 0:
+		if not is_moving_visual:
+			is_moving_visual = true
+			walk_frame_index = 0
+			walk_frame_timer = 0.0
+		walk_frame_timer += delta
+		if walk_frame_timer >= WALK_FRAME_SPEED:
+			walk_frame_timer -= WALK_FRAME_SPEED
+			walk_frame_index = (walk_frame_index + 1) % tex_walk_frames.size()
+		sprite.texture = tex_walk_frames[walk_frame_index]
+		_apply_sprite_scale(tex_walk_frames[walk_frame_index])
+	else:
+		if is_moving_visual:
+			is_moving_visual = false
+		if tex_idle != null:
+			sprite.texture = tex_idle
+			_apply_sprite_scale(tex_idle)
 
 func _handle_hit_flash(delta: float) -> void:
 	var base_color = Color(1, 1, 1)
