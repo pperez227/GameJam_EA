@@ -1,0 +1,30 @@
+[gd_scene load_steps=8 format=3 uid="uid://cmain0001"]
+
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cring001" path="res://scenes/Ring.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://cplayer01" path="res://scenes/Player.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://cenemy001" path="res://scenes/Enemy.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://cpart0001" path="res://scenes/ParticleManager.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://chud00001" path="res://scenes/HUD.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://cefx00001" path="res://scenes/ScreenEffects.tscn" id="7"]
+
+[node name="Main" type="Node2D"]
+
+[node name="ShakeCamera" type="Camera2D" parent="."]
+enabled = true
+position = Vector2(400, 250)
+
+[node name="Ring" parent="." instance=ExtResource("2")]
+
+[node name="Player" parent="." instance=ExtResource("3")]
+
+[node name="Enemy" parent="." instance=ExtResource("4")]
+
+[node name="ParticleManager" parent="." instance=ExtResource("5")]
+
+[node name="HUD" parent="." instance=ExtResource("6")]
+
+[node name="ScreenEffects" parent="." instance=ExtResource("7")]
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("1")
