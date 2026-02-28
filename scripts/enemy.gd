@@ -66,12 +66,12 @@ func _ready() -> void:
 
 	# Load walk animation frames
 	for i in range(100):
-		var frame_img = Image.new()
 		var path = "res://assets/walk_frames/enemy/frame_" + str(i) + ".png"
+		if not FileAccess.file_exists(path):
+			break
+		var frame_img = Image.new()
 		if frame_img.load(path) == OK:
 			tex_walk_frames.append(ImageTexture.create_from_image(frame_img))
-		else:
-			break
 
 	if tex_idle != null:
 		sprite.texture = tex_idle
