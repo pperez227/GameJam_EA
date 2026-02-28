@@ -118,7 +118,7 @@ func _state_attack(delta: float) -> void:
 	enemy.position += dir * ATTACK_ACCEL * delta * 0.01
 
 	# Try to attack
-	if attack_cooldown <= 0:
+	if attack_cooldown <= 0 and enemy.stamina >= enemy.NORMAL_ATTACK_STAMINA_COST:
 		var dist: float = enemy.position.distance_to(player.position)
 		if dist < 200.0:
 			enemy.start_attack(false)
@@ -164,7 +164,7 @@ func _handle_super_active(delta: float) -> void:
 	enemy.position += dir * SUPER_SPEED * delta * 0.01
 
 	# Hit every SUPER_HIT_INTERVAL
-	if super_hit_timer <= 0:
+	if super_hit_timer <= 0 and enemy.stamina >= enemy.SUPER_ATTACK_STAMINA_COST:
 		enemy.start_attack(true)
 		super_hit_timer = SUPER_HIT_INTERVAL
 

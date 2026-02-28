@@ -25,6 +25,9 @@ var camera: Camera2D
 
 var sfx_punch: AudioStreamPlayer
 var sfx_deadly: AudioStreamPlayer
+var sfx_whoosh_soft: AudioStreamPlayer
+var sfx_whoosh_hard: AudioStreamPlayer
+var sfx_whoosh_super: AudioStreamPlayer
 
 func _ready() -> void:
 	# Get references from sibling nodes (all already initialized)
@@ -63,6 +66,11 @@ func _ready() -> void:
 	sfx_deadly.stream = deadly_stream
 	add_child(sfx_deadly)
 
+	# Load whoosh sound effects
+	sfx_whoosh_soft = _load_sfx("SfxWhooshSoft", "res://whoosh_suave.mp3")
+	sfx_whoosh_hard = _load_sfx("SfxWhooshHard", "res://whoosh_fuerte.mp3")
+	sfx_whoosh_super = _load_sfx("SfxWhooshSuper", "res://whoosh_super.mp3")
+
 	# Connect signals
 	player.player_hit.connect(_on_player_hit)
 	player.player_dead.connect(_on_player_dead)
@@ -76,6 +84,10 @@ func _ready() -> void:
 	player.qte_mistake.connect(_on_qte_mistake)
 	player.qte_ended.connect(_on_qte_ended)
 	player.qte_missed.connect(_on_qte_missed)
+
+	# Attack launch signals (for whoosh sounds)
+	player.attack_launched.connect(_on_player_attack_launched)
+	enemy.enemy_attack_launched.connect(_on_enemy_attack_launched)
 
 func _process(_delta: float) -> void:
 	if state == GameState.FIGHTING:
@@ -135,9 +147,9 @@ func _check_player_hits_enemy() -> void:
 
 		# Sound effect
 		if player.current_attack_type == "soft":
-			sfx_punch.play()
+			_play_sfx_safe(sfx_punch)
 		else:
-			sfx_deadly.play()
+			_play_sfx_safe(sfx_deadly)
 
 		# Effects
 		var hit_pos: Vector2 = (player_punch_pos + enemy_body_pos) / 2.0
@@ -172,9 +184,9 @@ func _check_enemy_hits_player() -> void:
 
 		# Sound effect
 		if enemy.is_super_attacking:
-			sfx_deadly.play()
+			_play_sfx_safe(sfx_deadly)
 		else:
-			sfx_punch.play()
+			_play_sfx_safe(sfx_punch)
 
 		# Effects
 		var hit_pos: Vector2 = (enemy_punch_pos + player_body_pos) / 2.0
@@ -221,3 +233,36 @@ func _on_qte_ended() -> void:
 func _on_qte_missed() -> void:
 	hud.show_miss_text()
 	screen_effects.shake(2.0, 0.1)
+
+# ── Attack launch handlers (whoosh sounds) ──────────────────────
+func _on_player_attack_launched(attack_type: String) -> void:
+	match attack_type:
+		"soft":
+			_play_sfx_safe(sfx_whoosh_soft)
+		"hard":
+			_play_sfx_safe(sfx_whoosh_hard)
+		"super":
+			_play_sfx_safe(sfx_whoosh_super)
+
+func _on_enemy_attack_launched(is_super: bool) -> void:
+	if is_super:
+		_play_sfx_safe(sfx_whoosh_super)
+	else:
+		_play_sfx_safe(sfx_whoosh_soft)
+
+# ── Audio helpers ───────────────────────────────────────────────
+func _play_sfx_safe(sfx: AudioStreamPlayer) -> void:
+	if not sfx.playing:
+		sfx.play()
+
+func _load_sfx(node_name: String, path: String) -> AudioStreamPlayer:
+	var player_node = AudioStreamPlayer.new()
+	player_node.name = node_name
+	var stream = AudioStreamMP3.new()
+	var file = FileAccess.open(path, FileAccess.READ)
+	if file:
+		stream.data = file.get_buffer(file.get_length())
+		file.close()
+	player_node.stream = stream
+	add_child(player_node)
+	return player_node

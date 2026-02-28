@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal enemy_hit(damage: float)
 signal enemy_dead()
 signal enemy_super_activated()
+signal enemy_attack_launched(is_super: bool)
 
 # ── Constants ────────────────────────────────────────────────────
 const MAX_HP: float = 100.0
@@ -13,6 +14,8 @@ const POWER_PER_HIT: float = 0.25
 const HIT_FLASH_DURATION: float = 0.2
 const STAMINA_REGEN: float = 0.12
 const BLOCK_STAMINA_DRAIN: float = 0.25
+const NORMAL_ATTACK_STAMINA_COST: float = 0.15
+const SUPER_ATTACK_STAMINA_COST: float = 0.30
 
 const MIN_X: float = 80.0
 const MAX_X: float = 720.0
@@ -194,10 +197,16 @@ func _handle_attack_timer(delta: float) -> void:
 			_end_attack()
 
 func start_attack(is_super: bool = false) -> void:
+	if is_super:
+		stamina -= SUPER_ATTACK_STAMINA_COST
+	else:
+		stamina -= NORMAL_ATTACK_STAMINA_COST
+	stamina = maxf(stamina, 0.0)
 	is_attacking = true
 	is_super_attacking = is_super
 	attack_active_timer = 0.15
 	punch_collision.disabled = false
+	enemy_attack_launched.emit(is_super)
 	if tex_punch != null:
 		sprite.texture = tex_punch
 		_apply_sprite_scale(tex_punch)

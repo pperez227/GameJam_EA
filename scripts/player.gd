@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal player_hit(damage: float)
 signal player_attacked(hit: bool)
 signal player_dead()
+signal attack_launched(attack_type: String)
 
 # QTE Signals
 signal qte_started(sequence: Array[String], time_limit: float)
@@ -300,6 +301,7 @@ func _start_attack(type: String, cost: float) -> void:
 	attack_cooldown_timer = ATTACK_COOLDOWN
 	attack_active_timer = ATTACK_DURATION
 	punch_collision.disabled = false
+	attack_launched.emit(type)
 	if tex_punch != null:
 		sprite.texture = tex_punch
 		_apply_sprite_scale(tex_punch)
@@ -312,6 +314,7 @@ func _attempt_special() -> void:
 	attack_cooldown_timer = SPECIAL_COOLDOWN
 	attack_active_timer = ATTACK_DURATION
 	punch_collision.disabled = false
+	attack_launched.emit("super")
 	if tex_punch != null:
 		sprite.texture = tex_punch
 		_apply_sprite_scale(tex_punch)
