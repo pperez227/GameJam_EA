@@ -41,7 +41,6 @@ var round_label: Label
 var timer_label: Label
 var score_label: Label
 var knockdown_label: Label
-var knockdown_bg: ColorRect
 var combo_label: Label
 var transition_label: Label
 
@@ -54,71 +53,73 @@ func _ready() -> void:
 	_build_miss_hud()
 	_build_round_hud()
 
-# ── Enemy HUD (top-left) ────────────────────────────────────────
+# ── Enemy HUD (top-right) ──────────────────────────────────────
 func _build_enemy_hud() -> void:
 	var container: Control = Control.new()
 	container.name = "EnemyHUD"
 	add_child(container)
 
+	var base_x: float = 800.0 - BAR_WIDTH - 12.0
+
 	var lbl: Label = Label.new()
 	lbl.text = "ENEMIGO"
-	lbl.position = Vector2(12, 6)
+	lbl.position = Vector2(base_x, 6)
 	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.add_theme_color_override("font_color", Color8(255, 80, 80))
 	container.add_child(lbl)
 
 	# HP bar with border
 	var hp_y: float = 24
-	_add_border(container, 12, hp_y, BAR_WIDTH, BAR_HEIGHT)
-	enemy_hp_bar = _make_bar(12, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
+	_add_border(container, base_x, hp_y, BAR_WIDTH, BAR_HEIGHT)
+	enemy_hp_bar = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
 	container.add_child(enemy_hp_bar)
-	enemy_hp_fill = _make_bar(12, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(60, 200, 60))
+	enemy_hp_fill = _make_bar(base_x, hp_y, BAR_WIDTH, BAR_HEIGHT, Color8(60, 200, 60))
 	container.add_child(enemy_hp_fill)
 
 	var hp_lbl: Label = Label.new()
 	hp_lbl.text = "HP"
-	hp_lbl.position = Vector2(14, hp_y - 1)
+	hp_lbl.position = Vector2(base_x + 2, hp_y - 1)
 	hp_lbl.add_theme_font_size_override("font_size", 11)
 	hp_lbl.add_theme_color_override("font_color", Color.WHITE)
 	container.add_child(hp_lbl)
 
 	# Stamina bar (blue) with border
 	var stm_y: float = hp_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, 12, stm_y, BAR_WIDTH, BAR_HEIGHT)
-	enemy_stm_bar = _make_bar(12, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
+	_add_border(container, base_x, stm_y, BAR_WIDTH, BAR_HEIGHT)
+	enemy_stm_bar = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(30, 30, 30))
 	container.add_child(enemy_stm_bar)
-	enemy_stm_fill = _make_bar(12, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(50, 130, 230))
+	enemy_stm_fill = _make_bar(base_x, stm_y, BAR_WIDTH, BAR_HEIGHT, Color8(50, 130, 230))
 	container.add_child(enemy_stm_fill)
 
 	var stm_lbl: Label = Label.new()
 	stm_lbl.text = "STM"
-	stm_lbl.position = Vector2(14, stm_y - 1)
+	stm_lbl.position = Vector2(base_x + 2, stm_y - 1)
 	stm_lbl.add_theme_font_size_override("font_size", 11)
 	stm_lbl.add_theme_color_override("font_color", Color.WHITE)
 	container.add_child(stm_lbl)
 
 	# Power bar (purple) with border
 	var pwr_y: float = stm_y + BAR_HEIGHT + BAR_SPACING
-	_add_border(container, 12, pwr_y, BAR_WIDTH, 12)
-	enemy_power_bar = _make_bar(12, pwr_y, BAR_WIDTH, 12, Color8(30, 30, 30))
+	_add_border(container, base_x, pwr_y, BAR_WIDTH, 12)
+	enemy_power_bar = _make_bar(base_x, pwr_y, BAR_WIDTH, 12, Color8(30, 30, 30))
 	container.add_child(enemy_power_bar)
-	enemy_power_fill = _make_bar(12, pwr_y, BAR_WIDTH, 12, Color8(160, 50, 210))
+	enemy_power_fill = _make_bar(base_x, pwr_y, BAR_WIDTH, 12, Color8(160, 50, 210))
 	container.add_child(enemy_power_fill)
 
 	var pwr_lbl: Label = Label.new()
 	pwr_lbl.text = "SUPER"
-	pwr_lbl.position = Vector2(14, pwr_y - 2)
+	pwr_lbl.position = Vector2(base_x + 2, pwr_y - 2)
 	pwr_lbl.add_theme_font_size_override("font_size", 9)
 	pwr_lbl.add_theme_color_override("font_color", Color8(200, 150, 255))
 	container.add_child(pwr_lbl)
 
-# ── Player HUD (top-right) ──────────────────────────────────────
+# ── Player HUD (top-left) ──────────────────────────────────────
 func _build_player_hud() -> void:
 	var container: Control = Control.new()
 	container.name = "PlayerHUD"
 	add_child(container)
 
-	var base_x: float = 800.0 - BAR_WIDTH - 12.0
+	var base_x: float = 12.0
 
 	var title_lbl: Label = Label.new()
 	title_lbl.text = "JUGADOR"
@@ -248,6 +249,7 @@ func start_qte(sequence: Array[String], time_limit: float) -> void:
 	# Clear old labels and boxes
 	for child in qte_container.get_children():
 		if child is ColorRect and child.name == "QTEBoxParent":
+			qte_container.remove_child(child)
 			child.queue_free()
 	qte_key_labels.clear()
 	
@@ -396,13 +398,6 @@ func _build_round_hud() -> void:
 	score_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	add_child(score_label)
 
-	# Knockdown background (dark, centered, hidden)
-	knockdown_bg = ColorRect.new()
-	knockdown_bg.position = Vector2(200, 180)
-	knockdown_bg.size = Vector2(400, 120)
-	knockdown_bg.color = Color(0, 0, 0, 0.6)
-	knockdown_bg.visible = false
-	add_child(knockdown_bg)
 
 	# Knockdown countdown (center screen, hidden)
 	knockdown_label = Label.new()
@@ -418,7 +413,7 @@ func _build_round_hud() -> void:
 	# Combo counter (right side, hidden)
 	combo_label = Label.new()
 	combo_label.text = ""
-	combo_label.position = Vector2(600, 350)
+	combo_label.position = Vector2(650, 430)
 	combo_label.size = Vector2(180, 50)
 	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	combo_label.add_theme_font_size_override("font_size", 32)
@@ -454,7 +449,6 @@ func update_score(p_wins: int, e_wins: int) -> void:
 	score_label.text = str(p_wins) + " - " + str(e_wins)
 
 func show_knockdown(count: int, is_player: bool) -> void:
-	knockdown_bg.visible = true
 	knockdown_label.visible = true
 	knockdown_label.add_theme_color_override("font_color", Color8(26, 58, 138))
 	if is_player:
@@ -464,7 +458,6 @@ func show_knockdown(count: int, is_player: bool) -> void:
 
 func hide_knockdown() -> void:
 	knockdown_label.visible = false
-	knockdown_bg.visible = false
 
 func update_combo(count: int) -> void:
 	if count >= 2:

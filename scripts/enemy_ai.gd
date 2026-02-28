@@ -62,20 +62,20 @@ func _ready() -> void:
 	# Apply difficulty settings
 	var diff: int = GameSettings.difficulty
 	if diff == 0:  # Normal
-		between_combo_cooldown = 0.5
-		max_combo_hits = 3
-		diff_block_chance = 0.4
-		base_aggression = 0.55
+		between_combo_cooldown = 1.0
+		max_combo_hits = 2
+		diff_block_chance = 0.20
+		base_aggression = 0.28
 	elif diff == 2:  # Extremo
-		between_combo_cooldown = 0.25
-		max_combo_hits = 4
-		diff_block_chance = 0.7
-		base_aggression = 0.85
-	else:  # Difícil
-		between_combo_cooldown = 0.35
+		between_combo_cooldown = 0.50
 		max_combo_hits = 3
-		diff_block_chance = 0.55
-		base_aggression = 0.70
+		diff_block_chance = 0.35
+		base_aggression = 0.43
+	else:  # Difícil
+		between_combo_cooldown = 0.70
+		max_combo_hits = 2
+		diff_block_chance = 0.28
+		base_aggression = 0.35
 
 func set_player_reference(p: CharacterBody2D) -> void:
 	player = p
@@ -273,8 +273,10 @@ func _after_combo() -> void:
 
 # ── Super ────────────────────────────────────────────────────────
 func activate_super() -> void:
-	super_pending = true
-	super_warning_timer = SUPER_WARNING_TIME
+	super_pending = false
+	super_active_timer = SUPER_DURATION
+	super_hit_timer = 0.0
+	_enter_state(State.SUPER, SUPER_DURATION)
 
 func _handle_super_warning(delta: float) -> void:
 	super_warning_timer -= delta

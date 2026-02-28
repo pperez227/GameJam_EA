@@ -37,7 +37,7 @@ var pause_panel: ColorRect
 var is_paused: bool = false
 
 # ── Round state ─────────────────────────────────────────────────
-const ROUND_TIME: float = 60.0
+const ROUND_TIME: float = 30.0
 const TOTAL_ROUNDS: int = 3
 const WINS_NEEDED: int = 2
 const KNOCKDOWN_TIME: float = 10.0
@@ -60,6 +60,7 @@ var knockdown_decided: bool = false  # enemy auto-decide flag
 # Combo counter
 var hit_combo_count: int = 0
 var hit_combo_timer: float = 0.0
+var overlap_timer: float = 0.0
 
 # Victory screen
 var victory_layer: CanvasLayer
@@ -178,6 +179,19 @@ func _process(delta: float) -> void:
 				if hit_combo_timer <= 0:
 					hit_combo_count = 0
 					hud.update_combo(0)
+			# Overlap detection
+			var dist = player.position.distance_to(enemy.position)
+			if dist < 30.0:
+				overlap_timer += delta
+				if overlap_timer > 1.0:
+					var push_dir = (enemy.position - player.position).normalized()
+					if push_dir.length() < 0.1:
+						push_dir = Vector2(1, 0)
+					enemy.position += push_dir * 100.0
+					enemy._clamp_to_ring()
+					overlap_timer = 0.0
+			else:
+				overlap_timer = 0.0
 		GameState.KNOCKDOWN:
 			_process_knockdown(delta)
 		GameState.ROUND_END:
@@ -323,6 +337,12 @@ func _recover_from_knockdown(who: String) -> void:
 		player.hp = KNOCKDOWN_RECOVERY_HP
 		player.sprite.rotation = 0
 		enemy.is_dead = false
+		# Separate enemy to opposite corner
+		if player.position.x < 400:
+			enemy.position.x = 620
+		else:
+			enemy.position.x = 180
+		enemy._clamp_to_ring()
 	else:
 		enemy.is_dead = false
 		enemy.hp = KNOCKDOWN_RECOVERY_HP

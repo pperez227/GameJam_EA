@@ -24,7 +24,7 @@ const BOT_LEFT_X: float = 140.0
 const BOT_RIGHT_X: float = 660.0	
 
 const MAX_HP: float = 100.0
-const STAMINA_REGEN: float = 0.21
+const STAMINA_REGEN: float = 0.42
 const SOFT_ATTACK_STAMINA_COST: float = 0.15
 const HARD_ATTACK_STAMINA_COST: float = 0.30
 const BLOCK_STAMINA_DRAIN: float = 0.25
@@ -275,7 +275,7 @@ func _handle_stamina(delta: float) -> void:
 	if not is_blocking and not is_block_broken:
 		stamina = clampf(stamina + STAMINA_REGEN * delta, 0.0, 1.0)
 		if stamina >= 1.0 and hp > 0 and hp < MAX_HP:
-			hp = minf(hp + 5.0 * delta, MAX_HP)
+			hp = minf(hp + 10.0 * delta, MAX_HP)
 
 func _handle_attack_timers(delta: float) -> void:
 	if is_in_qte:
