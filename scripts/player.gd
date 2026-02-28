@@ -39,6 +39,13 @@ const QTE_TIME_LIMIT: float = 3.5
 const QTE_PENALTY_PER_MISTAKE: float = 0.15
 const QTE_TIMEOUT_PENALTY: float = 0.10
 
+# Dynamic cooldowns based on whoosh audio length
+var attack_durations = {
+	"soft": 0.18,
+	"hard": 0.30,
+	"super": 0.30
+}
+
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP
 var stamina: float = 1.0
@@ -293,13 +300,18 @@ func _handle_input() -> void:
 		_start_attack("hard", HARD_ATTACK_STAMINA_COST)
 		return
 
+func set_attack_durations(soft: float, hard: float, super_atk: float) -> void:
+	attack_durations["soft"] = soft
+	attack_durations["hard"] = hard
+	attack_durations["super"] = super_atk
+
 func _start_attack(type: String, cost: float) -> void:
 	stamina -= cost
 	is_attacking = true
 	is_special = false
 	current_attack_type = type
-	attack_cooldown_timer = ATTACK_COOLDOWN
-	attack_active_timer = ATTACK_DURATION
+	attack_cooldown_timer = attack_durations[type]
+	attack_active_timer = attack_durations[type]
 	punch_collision.disabled = false
 	attack_launched.emit(type)
 	if tex_punch != null:
@@ -311,8 +323,8 @@ func _attempt_special() -> void:
 	is_attacking = true
 	is_special = true
 	current_attack_type = "special_startup"
-	attack_cooldown_timer = SPECIAL_COOLDOWN
-	attack_active_timer = ATTACK_DURATION
+	attack_cooldown_timer = attack_durations["super"]
+	attack_active_timer = attack_durations["super"]
 	punch_collision.disabled = false
 	attack_launched.emit("super")
 	if tex_punch != null:

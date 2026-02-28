@@ -71,6 +71,14 @@ func _ready() -> void:
 	sfx_whoosh_hard = _load_sfx("SfxWhooshHard", "res://whoosh_fuerte.mp3")
 	sfx_whoosh_super = _load_sfx("SfxWhooshSuper", "res://whoosh_super.mp3")
 
+	# Pass exact sound lengths to player for dynamic cooldowns
+	if player.has_method("set_attack_durations"):
+		player.set_attack_durations(
+			sfx_whoosh_soft.stream.get_length(),
+			sfx_whoosh_hard.stream.get_length(),
+			sfx_whoosh_super.stream.get_length()
+		)
+
 	# Connect signals
 	player.player_hit.connect(_on_player_hit)
 	player.player_dead.connect(_on_player_dead)
