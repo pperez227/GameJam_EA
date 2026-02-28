@@ -57,14 +57,14 @@ text = "JUGAR"
 
 [node name="DifficultyOption" type="OptionButton" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_diff")
 item_count = 3
-selected = 1
-popup/item_0/text = "Fácil"
-popup/item_1/text = "Normal"
+selected = 0
+popup/item_0/text = "Normal"
+popup/item_1/text = "Difícil"
 popup/item_1/id = 1
-popup/item_2/text = "Difícil"
+popup/item_2/text = "Extremo"
 popup/item_2/id = 2
 
 [node name="Button3" type="Button" parent="VBoxContainer"]

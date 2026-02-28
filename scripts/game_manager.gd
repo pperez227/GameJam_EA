@@ -33,7 +33,13 @@ var sfx_whoosh_super: AudioStreamPlayer
 var combo_note_sfx: Dictionary = {}
 var qte_sequence_cache: Array[String] = []
 
+# Pause menu
+var pause_layer: CanvasLayer
+var pause_panel: ColorRect
+var is_paused: bool = false
+
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Get references from sibling nodes (all already initialized)
 	player = get_parent().get_node("Player")
 	enemy = get_parent().get_node("Enemy")
@@ -110,7 +116,12 @@ func _ready() -> void:
 	player.attack_launched.connect(_on_player_attack_launched)
 	enemy.enemy_attack_launched.connect(_on_enemy_attack_launched)
 
+	# Build pause menu
+	_build_pause_menu()
+
 func _process(_delta: float) -> void:
+	if is_paused:
+		return
 	if state == GameState.FIGHTING:
 		_update_hud()
 		_check_power_pulse()
@@ -300,3 +311,85 @@ func _load_sfx(node_name: String, path: String) -> AudioStreamPlayer:
 	player_node.stream = stream
 	add_child(player_node)
 	return player_node
+
+# ── Pause menu ──────────────────────────────────────────────────
+func _build_pause_menu() -> void:
+	pause_layer = CanvasLayer.new()
+	pause_layer.name = "PauseLayer"
+	pause_layer.layer = 10
+	pause_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(pause_layer)
+
+	# Dark overlay
+	pause_panel = ColorRect.new()
+	pause_panel.name = "PausePanel"
+	pause_panel.color = Color(0, 0, 0, 0.7)
+	pause_panel.anchors_preset = Control.PRESET_FULL_RECT
+	pause_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pause_panel.visible = false
+	pause_layer.add_child(pause_panel)
+
+	# Centered VBox
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.offset_left = -150
+	vbox.offset_right = 150
+	vbox.offset_top = -80
+	vbox.offset_bottom = 80
+	vbox.add_theme_constant_override("separation", 20)
+	pause_panel.add_child(vbox)
+
+	# Title
+	var title = Label.new()
+	title.text = "PAUSA"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color.WHITE)
+	vbox.add_child(title)
+
+	# Resume button
+	var btn_resume = Button.new()
+	btn_resume.text = "REANUDAR"
+	btn_resume.add_theme_font_size_override("font_size", 24)
+	var style_resume = StyleBoxFlat.new()
+	style_resume.bg_color = Color(0.376, 0.267, 0.123, 1)
+	btn_resume.add_theme_stylebox_override("normal", style_resume)
+	btn_resume.pressed.connect(_on_resume_pressed)
+	vbox.add_child(btn_resume)
+
+	# Main menu button
+	var btn_menu = Button.new()
+	btn_menu.text = "MENÚ PRINCIPAL"
+	btn_menu.add_theme_font_size_override("font_size", 24)
+	var style_menu = StyleBoxFlat.new()
+	style_menu.bg_color = Color(0.376, 0.267, 0.123, 1)
+	btn_menu.add_theme_stylebox_override("normal", style_menu)
+	btn_menu.pressed.connect(_on_menu_pressed)
+	vbox.add_child(btn_menu)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if state == GameState.GAME_OVER:
+			return
+		if is_paused:
+			_resume_game()
+		else:
+			_pause_game()
+		get_viewport().set_input_as_handled()
+
+func _pause_game() -> void:
+	is_paused = true
+	pause_panel.visible = true
+	get_tree().paused = true
+
+func _resume_game() -> void:
+	is_paused = false
+	pause_panel.visible = false
+	get_tree().paused = false
+
+func _on_resume_pressed() -> void:
+	_resume_game()
+
+func _on_menu_pressed() -> void:
+	_resume_game()
+	get_tree().change_scene_to_file("res://scenes/Menu.tscn")

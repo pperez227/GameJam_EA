@@ -61,21 +61,21 @@ func _ready() -> void:
 	enemy = get_parent() as CharacterBody2D
 	# Apply difficulty settings
 	var diff: int = GameSettings.difficulty
-	if diff == 0:  # Fácil
-		between_combo_cooldown = 1.0
-		max_combo_hits = 1
-		diff_block_chance = 0.0
-		base_aggression = 0.25
-	elif diff == 2:  # Difícil
-		between_combo_cooldown = 0.25
-		max_combo_hits = 4
-		diff_block_chance = 0.7
-		base_aggression = 0.85
-	else:  # Normal (default)
+	if diff == 0:  # Normal
 		between_combo_cooldown = 0.5
 		max_combo_hits = 3
 		diff_block_chance = 0.4
 		base_aggression = 0.55
+	elif diff == 2:  # Extremo
+		between_combo_cooldown = 0.25
+		max_combo_hits = 4
+		diff_block_chance = 0.7
+		base_aggression = 0.85
+	else:  # Difícil
+		between_combo_cooldown = 0.35
+		max_combo_hits = 3
+		diff_block_chance = 0.55
+		base_aggression = 0.70
 
 func set_player_reference(p: CharacterBody2D) -> void:
 	player = p
