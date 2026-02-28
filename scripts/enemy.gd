@@ -17,12 +17,12 @@ const BLOCK_STAMINA_DRAIN: float = 0.25
 const NORMAL_ATTACK_STAMINA_COST: float = 0.15
 const SUPER_ATTACK_STAMINA_COST: float = 0.30
 
-const MIN_Y: float = 190.0
+const MIN_Y: float = 205.0
 const MAX_Y: float = 420.0
-const TOP_LEFT_X: float = 165.0
-const TOP_RIGHT_X: float = 635.0
-const BOT_LEFT_X: float = 50.0
-const BOT_RIGHT_X: float = 750.0
+const TOP_LEFT_X: float = 195.0
+const TOP_RIGHT_X: float = 605.0
+const BOT_LEFT_X: float = 30.0
+const BOT_RIGHT_X: float = 770.0
 
 # ── State ────────────────────────────────────────────────────────
 var hp: float = MAX_HP

@@ -166,7 +166,9 @@ func _build_player_hud() -> void:
 func _build_hint() -> void:
 	hint_label = Label.new()
 	hint_label.text = "WASD: MOVER  |  J: GOLPE S.  |  K: GOLPE F.  |  L: SUPER  |  SPACE: BLOQUEO"
-	hint_label.position = Vector2(100, 460)
+	hint_label.position = Vector2(0, 460)
+	hint_label.size = Vector2(800, 20)
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.add_theme_font_size_override("font_size", 11)
 	hint_label.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
 	add_child(hint_label)

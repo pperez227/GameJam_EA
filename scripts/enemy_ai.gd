@@ -6,20 +6,22 @@ extends Node
 enum State { APPROACH, DASH, CIRCLE, ATTACK, SUPER, BLOCK }
 
 # ── Configuration ────────────────────────────────────────────────
-const APPROACH_SPEED: float = 130.0
-const DASH_SPEED: float = 260.0
-const ATTACK_ADVANCE_SPEED: float = 180.0
-const CIRCLE_SPEED: float = 110.0
-const BLOCK_RETREAT_SPEED: float = 60.0
+const APPROACH_SPEED: float = 140.0
+const DASH_SPEED: float = 280.0
+const ATTACK_ADVANCE_SPEED: float = 200.0
+const CIRCLE_SPEED: float = 120.0
+const BLOCK_RETREAT_SPEED: float = 50.0
 const SUPER_SPEED: float = 320.0
 
-const IDEAL_FIGHT_DISTANCE: float = 80.0
-const ATTACK_RANGE: float = 110.0
+const IDEAL_FIGHT_DISTANCE: float = 75.0
+const ATTACK_RANGE: float = 105.0
 const CLOSE_RANGE: float = 50.0
-const FAR_RANGE: float = 170.0
+const FAR_RANGE: float = 160.0
 
-const ATTACK_COOLDOWN_MIN: float = 0.35
-const ATTACK_COOLDOWN_MAX: float = 0.65
+const COMBO_COOLDOWN: float = 0.18        # Between hits in a combo
+const BETWEEN_COMBO_COOLDOWN: float = 0.5  # After a combo ends
+const MAX_COMBO_HITS: int = 3
+
 const SUPER_WARNING_TIME: float = 0.6
 const SUPER_DURATION: float = 1.2
 const SUPER_HIT_INTERVAL: float = 0.25
@@ -30,6 +32,10 @@ var phase_timer: float = 0.5
 var attack_cooldown: float = 0.0
 var circle_direction: float = 1.0
 
+# Combo tracking
+var combo_hits_remaining: int = 0
+var combo_hit_timer: float = 0.0
+
 # QTE State
 var qte_slowdown: bool = false
 var slowdown_factor: float = 0.0
@@ -39,6 +45,9 @@ var super_warning_timer: float = 0.0
 var super_active_timer: float = 0.0
 var super_hit_timer: float = 0.0
 var super_pending: bool = false
+
+# Reactive block tracking (edge detection)
+var _player_was_attacking: bool = false
 
 # ── References ───────────────────────────────────────────────────
 var enemy: CharacterBody2D
@@ -67,22 +76,35 @@ func _process(delta: float) -> void:
 		_handle_super_active(delta)
 		return
 
+	# ── Proactive super check ──
+	# If power is full, activate super immediately
+	if enemy.power >= 1.0 and not super_pending and current_state != State.SUPER:
+		activate_super()
+		return
+
 	# Determine effective delta based on QTE slowdown
 	var effective_delta = delta * (slowdown_factor if qte_slowdown else 1.0)
 	if enemy.stamina <= 0.1:
 		effective_delta *= 0.6
-		
+
 	# Decrease timers
 	phase_timer -= effective_delta
 	if attack_cooldown > 0:
 		attack_cooldown -= effective_delta
+	if combo_hit_timer > 0:
+		combo_hit_timer -= effective_delta
 
-	# Reactive block: if player is attacking nearby, chance to block
-	if current_state != State.BLOCK and _should_react_with_block():
-		enemy.is_blocking = true
-		_enter_state(State.BLOCK, randf_range(0.3, 0.6))
+	# ── Reactive block (edge-triggered, not per-frame random) ──
+	# Only react the frame the player STARTS attacking, not every frame
+	var player_attacking_now: bool = player.is_attacking
+	if player_attacking_now and not _player_was_attacking:
+		# Player just started an attack — react?
+		if current_state != State.BLOCK and _should_react_with_block():
+			enemy.is_blocking = true
+			_enter_state(State.BLOCK, randf_range(0.3, 0.6))
+	_player_was_attacking = player_attacking_now
 
-	# Execute current state (using effective_delta)
+	# Execute current state
 	match current_state:
 		State.APPROACH:
 			_state_approach(effective_delta)
@@ -106,19 +128,18 @@ func _should_react_with_block() -> bool:
 	var dist: float = enemy.position.distance_to(player.position)
 	if dist > 120.0:
 		return false
-	if player.is_attacking and randf() < 0.35:
-		return true
-	return false
+	# Higher chance when HP is high (cautious), lower when desperate
+	var block_chance: float = 0.5 if (enemy.hp / enemy.MAX_HP) > 0.4 else 0.2
+	return randf() < block_chance
 
 # ── States ───────────────────────────────────────────────────────
 func _state_approach(delta: float) -> void:
 	var dir: Vector2 = (player.position - enemy.position).normalized()
 	enemy.position += dir * APPROACH_SPEED * delta
 	enemy._clamp_to_ring()
-	# Transition to attack if close
 	var dist: float = enemy.position.distance_to(player.position)
 	if dist < ATTACK_RANGE:
-		_enter_state(State.ATTACK, randf_range(0.5, 0.8))
+		_start_combo()
 
 func _state_dash(delta: float) -> void:
 	var dir: Vector2 = (player.position - enemy.position).normalized()
@@ -126,81 +147,101 @@ func _state_dash(delta: float) -> void:
 	enemy._clamp_to_ring()
 	var dist: float = enemy.position.distance_to(player.position)
 	if dist < ATTACK_RANGE:
-		_enter_state(State.ATTACK, randf_range(0.5, 0.8))
+		_start_combo()
 
 func _state_circle(delta: float) -> void:
 	var dist: float = enemy.position.distance_to(player.position)
-	
-	# Lateral movement around the player
-	var to_player: Vector2 = (player.position - enemy.position)
+	var to_player: Vector2 = player.position - enemy.position
+
+	# Lateral movement perpendicular to player direction
 	var lateral: Vector2 = Vector2(-to_player.y, to_player.x).normalized() * circle_direction
-	
-	# Also maintain ideal fight distance
+
+	# Maintain ideal fight distance while circling
 	var distance_correction: float = 0.0
-	if dist > IDEAL_FIGHT_DISTANCE + 30:
-		distance_correction = 1.0  # Move closer
-	elif dist < IDEAL_FIGHT_DISTANCE - 20:
-		distance_correction = -0.5  # Move away slightly
-	
+	if dist > IDEAL_FIGHT_DISTANCE + 25.0:
+		distance_correction = 0.8
+	elif dist < IDEAL_FIGHT_DISTANCE - 15.0:
+		distance_correction = -0.4
+
 	var approach_dir: Vector2 = to_player.normalized() * distance_correction
 	var move_dir: Vector2 = (lateral + approach_dir).normalized()
 	enemy.position += move_dir * CIRCLE_SPEED * delta
 	enemy._clamp_to_ring()
-	
-	# If in attack range and cooldown ready, transition to attack
+
+	# If close and cooldown ready, start a combo
 	if dist < ATTACK_RANGE and attack_cooldown <= 0:
-		_enter_state(State.ATTACK, randf_range(0.4, 0.7))
+		_start_combo()
 
 func _state_attack(delta: float) -> void:
 	var dist: float = enemy.position.distance_to(player.position)
-	
-	# Advance toward player if not in range
+
+	# Advance toward player if not in close range
 	if dist > CLOSE_RANGE:
 		var dir: Vector2 = (player.position - enemy.position).normalized()
 		enemy.position += dir * ATTACK_ADVANCE_SPEED * delta
 		enemy._clamp_to_ring()
 
-	# Try to attack
-	if attack_cooldown <= 0 and enemy.stamina >= enemy.NORMAL_ATTACK_STAMINA_COST:
-		if dist < ATTACK_RANGE:
-			# 30% chance of a super-powered hit if stamina allows
-			var use_heavy: bool = randf() < 0.30 and enemy.stamina >= enemy.SUPER_ATTACK_STAMINA_COST
+	# Execute combo hits
+	if combo_hits_remaining > 0 and combo_hit_timer <= 0:
+		if dist < ATTACK_RANGE and enemy.stamina >= enemy.NORMAL_ATTACK_STAMINA_COST:
+			# Mix light and heavy hits: last hit of combo is heavy 40% of time
+			var use_heavy: bool = false
+			if combo_hits_remaining == 1 and randf() < 0.40:
+				use_heavy = enemy.stamina >= enemy.SUPER_ATTACK_STAMINA_COST
 			enemy.start_attack(use_heavy)
-			attack_cooldown = randf_range(ATTACK_COOLDOWN_MIN, ATTACK_COOLDOWN_MAX)
-			
-			# After attack: decide next move
-			var roll: float = randf()
-			if roll < 0.45:
-				# Chain attack — stay aggressive
-				_enter_state(State.ATTACK, randf_range(0.3, 0.5))
-			elif roll < 0.65:
-				# Quick dash to reposition
-				_enter_state(State.DASH, randf_range(0.2, 0.4))
-			elif roll < 0.85:
-				# Circle to find opening
-				circle_direction = 1.0 if randf() < 0.5 else -1.0
-				_enter_state(State.CIRCLE, randf_range(0.5, 0.8))
-			else:
-				# Brief block
-				if enemy.stamina > 0.2:
-					enemy.is_blocking = true
-					_enter_state(State.BLOCK, randf_range(0.2, 0.4))
-				else:
-					circle_direction = 1.0 if randf() < 0.5 else -1.0
-					_enter_state(State.CIRCLE, randf_range(0.4, 0.7))
+			combo_hits_remaining -= 1
+			combo_hit_timer = COMBO_COOLDOWN
+		elif dist >= ATTACK_RANGE:
+			# Too far — abort combo, dash closer
+			combo_hits_remaining = 0
+			_enter_state(State.DASH, randf_range(0.2, 0.3))
+			return
+
+	# Combo finished — decide next move
+	if combo_hits_remaining <= 0 and combo_hit_timer <= 0:
+		attack_cooldown = BETWEEN_COMBO_COOLDOWN
+		_after_combo()
 
 func _state_block(delta: float) -> void:
 	enemy.is_blocking = true
-	# Slight retreat while blocking
 	var dir: Vector2 = (enemy.position - player.position).normalized()
 	enemy.position += dir * BLOCK_RETREAT_SPEED * delta
 	enemy._clamp_to_ring()
-	
+
 	if enemy.is_block_broken:
 		enemy.is_blocking = false
-		# When block breaks, react with a dash away
 		circle_direction = 1.0 if randf() < 0.5 else -1.0
 		_enter_state(State.CIRCLE, randf_range(0.3, 0.5))
+
+# ── Combo system ────────────────────────────────────────────────
+func _start_combo() -> void:
+	combo_hits_remaining = randi_range(2, MAX_COMBO_HITS)
+	combo_hit_timer = 0.0  # First hit is immediate
+	_enter_state(State.ATTACK, 2.0)  # Long timer — combo controls exit
+
+func _after_combo() -> void:
+	var roll: float = randf()
+	var dist: float = enemy.position.distance_to(player.position)
+
+	if roll < 0.35:
+		# Stay aggressive — circle briefly then combo again
+		circle_direction = 1.0 if randf() < 0.5 else -1.0
+		_enter_state(State.CIRCLE, randf_range(0.3, 0.5))
+	elif roll < 0.55:
+		# Quick dash to cut angle
+		_enter_state(State.DASH, randf_range(0.2, 0.3))
+	elif roll < 0.75:
+		# Block briefly (read the opponent)
+		if enemy.stamina > 0.2 and not enemy.is_block_broken:
+			enemy.is_blocking = true
+			_enter_state(State.BLOCK, randf_range(0.2, 0.4))
+		else:
+			circle_direction = 1.0 if randf() < 0.5 else -1.0
+			_enter_state(State.CIRCLE, randf_range(0.4, 0.6))
+	else:
+		# Back off slightly
+		circle_direction = 1.0 if randf() < 0.5 else -1.0
+		_enter_state(State.CIRCLE, randf_range(0.5, 0.8))
 
 # ── Super ────────────────────────────────────────────────────────
 func activate_super() -> void:
@@ -238,52 +279,50 @@ func _handle_super_active(delta: float) -> void:
 func _choose_next_state() -> void:
 	var dist: float = enemy.position.distance_to(player.position)
 	var roll: float = randf()
-	
-	# Adaptiveness: aggression depends on HP balance
+
+	# Aggression based on HP balance
 	var enemy_hp_ratio: float = enemy.hp / enemy.MAX_HP
-	var player_hp_ratio: float = player.hp / player.MAX_HP if player.has_method("get_current_damage") else 1.0
-	# Access player HP directly
+	var player_hp_ratio: float = 1.0
 	if "hp" in player and "MAX_HP" in player:
 		player_hp_ratio = player.hp / player.MAX_HP
-	
-	# Aggression modifier: more aggressive when enemy HP is low or player HP is low
-	var aggression: float = 0.5
+
+	var aggression: float = 0.55
 	if enemy_hp_ratio < 0.3:
-		aggression = 0.8  # Desperate — go all in
+		aggression = 0.85  # Desperate — all in
 	elif player_hp_ratio < 0.3:
-		aggression = 0.75  # Smell blood — press advantage
+		aggression = 0.80  # Smell blood
 	elif enemy_hp_ratio > 0.7:
-		aggression = 0.45  # Comfortable — mix it up
-	
-	# Far away → approach or dash
+		aggression = 0.50  # Comfortable
+
+	# Far away → close the distance
 	if dist > FAR_RANGE:
-		if roll < 0.6:
-			_enter_state(State.APPROACH, randf_range(0.6, 1.2))
+		if roll < 0.55:
+			_enter_state(State.APPROACH, randf_range(0.5, 1.0))
 		else:
 			_enter_state(State.DASH, randf_range(0.3, 0.5))
-	# In fighting range → mostly attack
+	# In attack range → mostly attack
 	elif dist < ATTACK_RANGE:
 		if attack_cooldown <= 0 and roll < aggression:
-			_enter_state(State.ATTACK, randf_range(0.5, 0.8))
+			_start_combo()
 		elif roll < aggression + 0.15:
 			circle_direction = 1.0 if randf() < 0.5 else -1.0
-			_enter_state(State.CIRCLE, randf_range(0.5, 0.8))
+			_enter_state(State.CIRCLE, randf_range(0.4, 0.7))
 		else:
-			if enemy.stamina > 0.2:
+			if enemy.stamina > 0.2 and not enemy.is_block_broken:
 				enemy.is_blocking = true
 				_enter_state(State.BLOCK, randf_range(0.3, 0.5))
 			else:
 				circle_direction = 1.0 if randf() < 0.5 else -1.0
-				_enter_state(State.CIRCLE, randf_range(0.4, 0.6))
-	# Mid range
+				_enter_state(State.CIRCLE, randf_range(0.3, 0.5))
+	# Mid range → close in
 	else:
-		if roll < 0.4:
-			_enter_state(State.APPROACH, randf_range(0.4, 0.8))
-		elif roll < 0.65:
+		if roll < 0.45:
+			_enter_state(State.APPROACH, randf_range(0.3, 0.6))
+		elif roll < 0.70:
 			_enter_state(State.DASH, randf_range(0.2, 0.4))
 		else:
 			circle_direction = 1.0 if randf() < 0.5 else -1.0
-			_enter_state(State.CIRCLE, randf_range(0.5, 0.9))
+			_enter_state(State.CIRCLE, randf_range(0.4, 0.7))
 
 func _enter_state(new_state: State, duration: float) -> void:
 	current_state = new_state
@@ -298,22 +337,22 @@ func set_qte_slowdown(active: bool) -> void:
 
 # ── Called when enemy takes damage (from GameManager) ────────────
 func on_enemy_damaged() -> void:
-	# Varied reactions instead of always dashing
+	# Interrupt current combo
+	combo_hits_remaining = 0
+
 	var roll: float = randf()
-	var dist: float = enemy.position.distance_to(player.position)
-	
-	if roll < 0.35:
-		# Counter-attack: dash back in aggressively
-		_enter_state(State.DASH, randf_range(0.2, 0.4))
-	elif roll < 0.60:
-		# Block: cover up after taking a hit
+	if roll < 0.30:
+		# Counter-attack immediately
+		_start_combo()
+	elif roll < 0.55:
+		# Block and recover
 		if enemy.stamina > 0.15 and not enemy.is_block_broken:
 			enemy.is_blocking = true
 			_enter_state(State.BLOCK, randf_range(0.3, 0.5))
 		else:
 			circle_direction = 1.0 if randf() < 0.5 else -1.0
-			_enter_state(State.CIRCLE, randf_range(0.4, 0.6))
+			_enter_state(State.CIRCLE, randf_range(0.3, 0.5))
 	else:
-		# Evade: circle away to reset
+		# Evade laterally
 		circle_direction = 1.0 if randf() < 0.5 else -1.0
-		_enter_state(State.CIRCLE, randf_range(0.4, 0.7))
+		_enter_state(State.CIRCLE, randf_range(0.3, 0.6))
