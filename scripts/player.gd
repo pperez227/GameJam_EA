@@ -107,6 +107,7 @@ func _ready() -> void:
 	_build_shadow()
 	punch_collision.disabled = true
 	position = Vector2(400, 400)
+	z_index = 1
 
 func _apply_sprite_scale(tex: Texture2D) -> void:
 	var s = tex.get_size()
