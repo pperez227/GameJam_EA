@@ -361,7 +361,7 @@ func _make_bar(x: float, y: float, w: float, h: float, color: Color) -> ColorRec
 	bar.color = color
 	return bar
 
-func _add_border(parent: Control, x: float, y: float, w: float, h: float) -> void:
+func _add_border(parent: Node, x: float, y: float, w: float, h: float) -> void:
 	var border: ColorRect = ColorRect.new()
 	border.position = Vector2(x - BORDER, y - BORDER)
 	border.size = Vector2(w + BORDER * 2, h + BORDER * 2)

@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1772304472
+::res://::1772305196
 ::res://assets/::1772292623
 ::res://assets/audio/::1772292980
 A.wav::AudioStreamWAV::9148660431435409369::1772285342::1772292980::1::::<><><>0<>0<>970e9d9e9e043a30e5960f331c6ee448<>res://.godot/imported/A.wav-d3aaa7670c443c9e6294582208c21578.sample::
@@ -28,11 +28,11 @@ Player.tscn::PackedScene::4376463160336::1772274605::0::1::::<><><>0<>0<><>::res
 Ring.tscn::PackedScene::131689496720::1772274605::0::1::::<><><>0<>0<><>::res://scripts/ring.gd
 ScreenEffects.tscn::PackedScene::3790484667976::1772274605::0::1::::<><><>0<>0<><>::res://scripts/screen_effects.gd
 ::res://scripts/::1772296753
-enemy.gd::GDScript::4852094403118010994::1772304249::0::1::::<>CharacterBody2D<><>0<>0<><>::
+enemy.gd::GDScript::4852094403118010994::1772305047::0::1::::<>CharacterBody2D<><>0<>0<><>::
 enemy_ai.gd::GDScript::6210956263608434300::1772304381::0::1::::<>Node<><>0<>0<><>::
-game_manager.gd::GDScript::5950466217698019835::1772304415::0::1::::<>Node<><>0<>0<><>::
-game_settings.gd::GDScript::796506906049846299::1772296613::0::1::::<>Node<><>0<>0<><>::
-hud.gd::GDScript::2363245444191375924::1772304283::0::1::::<>CanvasLayer<><>0<>0<><>::
+game_manager.gd::GDScript::5950466217698019835::1772305109::0::1::::<>Node<><>0<>0<><>::
+game_settings.gd::GDScript::796506906049846299::1772305030::0::1::::<>Node<><>0<>0<><>::
+hud.gd::GDScript::2363245444191375924::1772305089::0::1::::<>CanvasLayer<><>0<>0<><>::
 menu.gd::GDScript::7928904187833197492::1772296662::0::1::::<>Node<><>0<>0<><>::
 particle_manager.gd::GDScript::230823867657408328::1772274605::0::1::::<>Node2D<><>0<>0<><>::
 player.gd::GDScript::3774160033093512966::1772304363::0::1::::<>CharacterBody2D<><>0<>0<><>::
