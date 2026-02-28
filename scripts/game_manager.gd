@@ -88,7 +88,7 @@ func _ready() -> void:
 	for key in note_keys:
 		var note_player = AudioStreamPlayer.new()
 		note_player.name = "SfxNote" + key
-		note_player.stream = load("res://" + key + ".mp3")
+		note_player.stream = load("res://" + key.to_lower() + ".mp3")
 		add_child(note_player)
 		combo_note_sfx[key] = note_player
 
