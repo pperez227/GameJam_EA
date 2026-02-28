@@ -179,19 +179,7 @@ func _process(delta: float) -> void:
 				if hit_combo_timer <= 0:
 					hit_combo_count = 0
 					hud.update_combo(0)
-			# Overlap detection
-			var dist = player.position.distance_to(enemy.position)
-			if dist < 30.0:
-				overlap_timer += delta
-				if overlap_timer > 1.0:
-					var push_dir = (enemy.position - player.position).normalized()
-					if push_dir.length() < 0.1:
-						push_dir = Vector2(1, 0)
-					enemy.position += push_dir * 100.0
-					enemy._clamp_to_ring()
-					overlap_timer = 0.0
-			else:
-				overlap_timer = 0.0
+
 		GameState.KNOCKDOWN:
 			_process_knockdown(delta)
 		GameState.ROUND_END:
@@ -348,6 +336,12 @@ func _recover_from_knockdown(who: String) -> void:
 		enemy.hp = KNOCKDOWN_RECOVERY_HP
 		enemy.sprite.rotation = 0
 		player.is_dead = false
+		# Separate player to opposite corner
+		if enemy.position.x < 400:
+			player.position.x = 620
+		else:
+			player.position.x = 180
+		player._clamp_to_ring()
 	state = GameState.FIGHTING
 
 # ── HUD updates ─────────────────────────────────────────────────
@@ -365,6 +359,12 @@ func _physics_process(_delta: float) -> void:
 		return
 	_check_player_hits_enemy()
 	_check_enemy_hits_player()
+	# Enforce minimum separation (85px)
+	var sep_dist = player.position.distance_to(enemy.position)
+	if sep_dist < 85.0 and sep_dist > 0.1:
+		var push = (enemy.position - player.position).normalized()
+		enemy.position = player.position + push * 85.0
+		enemy._clamp_to_ring()
 
 func _check_player_hits_enemy() -> void:
 	if not player.is_attacking:
