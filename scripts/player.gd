@@ -119,7 +119,7 @@ var is_moving_visual: bool = false
 # ── Ready ────────────────────────────────────────────────────────
 func _ready() -> void:
 	var img_idle = Image.new()
-	if img_idle.load("res://assets/images/rana_quieto.jpg") == OK:
+	if img_idle.load("res://assets/images/rana_quieto.png") == OK:
 		tex_idle = ImageTexture.create_from_image(img_idle)
 		
 	var img_punch = Image.new()

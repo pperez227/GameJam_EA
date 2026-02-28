@@ -57,11 +57,11 @@ var is_moving_visual: bool = false
 
 func _ready() -> void:
 	var img_idle = Image.new()
-	if img_idle.load("res://assets/images/enemigo_quieto.jpg") == OK:
+	if img_idle.load("res://assets/images/enemigo_quieto.png") == OK:
 		tex_idle = ImageTexture.create_from_image(img_idle)
 		
 	var img_punch = Image.new()
-	if img_punch.load("res://assets/images/golpe_enemigo.jpg") == OK:
+	if img_punch.load("res://assets/images/golpe_enemigo.png") == OK:
 		tex_punch = ImageTexture.create_from_image(img_punch)
 
 	# Load walk animation frames
