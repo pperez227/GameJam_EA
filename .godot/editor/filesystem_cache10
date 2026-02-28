@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1772287274
+::res://::1772287588
 A.mp3::AudioStreamMP3::5972919543153989278::1772285342::1772286966::0::::<><><>0<>0<>d42a7db51a4d7baba906b28835b22497<>::
 D.mp3::AudioStreamMP3::6811892367881089859::1772285405::1772286966::0::::<><><>0<>0<>bff70c039e6a022717de6c1902cebf69<>::
 deadly strike.mp3::AudioStreamMP3::6024180360245289118::1772274668::1772278037::1::::<><><>0<>0<>a9832b1830bf611c01eb2cafbdd5eddb<>res://.godot/imported/deadly strike.mp3-0c5043d20309816d657c0dfeae523f42.mp3str::
@@ -24,7 +24,7 @@ ScreenEffects.tscn::PackedScene::3790484667976::1772274605::0::1::::<><><>0<>0<>
 ::res://scripts/::1772274605
 enemy.gd::GDScript::4852094403118010994::1772282236::0::1::::<>CharacterBody2D<><>0<>0<><>::
 enemy_ai.gd::GDScript::6210956263608434300::1772282238::0::1::::<>Node<><>0<>0<><>::
-game_manager.gd::GDScript::5950466217698019835::1772287140::0::1::::<>Node<><>0<>0<><>::
+game_manager.gd::GDScript::5950466217698019835::1772287507::0::1::::<>Node<><>0<>0<><>::
 hud.gd::GDScript::2363245444191375924::1772274605::0::1::::<>CanvasLayer<><>0<>0<><>::
 particle_manager.gd::GDScript::230823867657408328::1772274605::0::1::::<>Node2D<><>0<>0<><>::
 player.gd::GDScript::3774160033093512966::1772286237::0::1::::<>CharacterBody2D<><>0<>0<><>::
